@@ -1,0 +1,17 @@
+L11 vs SF 1600: n=12 W9 D0 L3 score 75% perf≈1791 avgms=68
+L13 vs SF 1900: n=12 W12 D0 L0 score 100% perf≈2504 avgms=295
+L16 vs SF 2400: n=12 W8 D1 L3 score 71% perf≈2554 avgms=999
+L13 vs SF 2200: n=12 W11 D0 L1 score 92% perf≈2617 avgms=305
+L16 vs SF 2700: n=12 W6 D1 L5 score 54% perf≈2729 avgms=1002
+DONE
+L12 vs SF 1900: n=12 W9 D1 L2 score 79% perf≈2132 avgms=148
+L13 vs SF 2200: n=12 W6 D0 L6 score 50% perf≈2200 avgms=285
+DONE
+L15 vs SF 2400: n=12 W4 D1 L7 score 38% perf≈2311 avgms=640
+DONE
+L10 vs SF 1320: n=12 W9 D0 L3 score 75% perf≈1511 avgms=62
+L12 vs SF 1900: n=12 W12 D0 L0 score 100% perf≈2504 avgms=152
+L9 vs SF 1320: n=12 W9 D0 L3 score 75% perf≈1511 avgms=19
+DONE
+L16 vs SF 2400: n=12 W10 D1 L1 score 88% perf≈2738 avgms=1018
+DONE
