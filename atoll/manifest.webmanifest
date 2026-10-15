@@ -1,0 +1,29 @@
+{
+ "name": "Atoll",
+ "short_name": "Atoll",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "orientation": "portrait",
+ "theme_color": "#0f4c5c",
+ "background_color": "#cfe6e4",
+ "icons": [
+  {
+   "src": "../icons/atoll-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "../icons/atoll-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "../icons/atoll-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}

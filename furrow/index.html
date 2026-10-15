@@ -1,0 +1,1749 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#3f5a2b"><meta name="apple-mobile-web-app-capable" content="yes"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="../icons/furrow-180.png"><link rel="icon" type="image/png" href="../icons/furrow-192.png"><meta name="apple-mobile-web-app-title" content="Furrow"><meta name="mobile-web-app-capable" content="yes"><script src="../config.js"></script><script src="../shim.js" data-game="furrow"></script></head><body><title>Furrow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;600;700&display=swap">
+<style>
+/* Layout: one phone-width column. Thin sticky round track on top, then turn banner, resources, tabs; board of action cards or a soil-plot farm grid; tool sheet docks to the bottom during actions. */
+:root{
+  --bg:#e4e8d8; --surface:#eef1e4; --raised:#fbfcf6; --ink:#1f2419; --muted:#5b6450; --line:#c3caaf;
+  --accent:#8f6510; --accent-ink:#fffaf0; --hl:#e3a90f;
+  --p1:#2c5d88; --p2:#a33d2a; --p3:#3c7a37; --p4:#77479a; --p5:#a8466f; --minor:#2b6e55;
+  --soil:#6f553b; --meadow:#b7c99a; --grass:#93b36a; --furrow:#bf9a5e; --furrow2:#a8834a; --fence:#4f341a;
+  --wall-wood:#a9783f; --wall-wood2:#8e6231; --wall-clay:#c27447; --wall-clay2:#a65d34; --wall-stone:#a3a8aa; --wall-stone2:#878c8e; --roof:#3e2a17;
+  --display:'Young Serif', Georgia, 'Times New Roman', serif;
+  --body:'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#151a13; --surface:#1d241a; --raised:#252e21; --ink:#e7ead9; --muted:#9fa98d; --line:#364130;
+  --accent:#e2b44a; --accent-ink:#201a08; --hl:#f2c94c;
+  --p1:#3f78a8; --p2:#b9513a; --p3:#4f9147; --p4:#9064b3; --p5:#c0587f; --minor:#6fc29f;
+  --soil:#3b2e21; --meadow:#4d5f3c; --grass:#5d7d3e; --furrow:#7d6238; --furrow2:#68512d; --fence:#d6b27c;
+  --roof:#22170c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#151a13; --surface:#1d241a; --raised:#252e21; --ink:#e7ead9; --muted:#9fa98d; --line:#364130;
+  --accent:#e2b44a; --accent-ink:#201a08; --hl:#f2c94c;
+  --p1:#3f78a8; --p2:#b9513a; --p3:#4f9147; --p4:#9064b3; --p5:#c0587f; --minor:#6fc29f;
+  --soil:#3b2e21; --meadow:#4d5f3c; --grass:#5d7d3e; --furrow:#7d6238; --furrow2:#68512d; --fence:#d6b27c;
+  --roof:#22170c; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font:15px/1.45 var(--body);-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#app{max-width:620px;margin:0 auto;padding-inline:16px;padding-block:0 40px}
+.with-panel{padding-bottom:58vh}
+.with-confirm{padding-bottom:180px}
+h1,h2,h3{font-family:var(--display);font-weight:400;text-wrap:balance;margin:0}
+.ic{width:18px;height:18px;flex:none;display:block}
+.sub{font-size:12.5px;color:var(--muted);line-height:1.35;margin:0}
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);margin-inline:-16px;padding:10px 16px 9px;border-bottom:1px solid var(--line)}
+.brandrow{display:flex;align-items:center;gap:10px}
+.brand{font-family:var(--display);font-size:22px;line-height:1}
+.rnd{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums;font-size:13px}
+.rnd b{color:var(--ink);font-size:17px;font-weight:700}
+.pill{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600}
+.pill.strong{background:var(--raised);border-color:var(--accent)}
+.track{display:grid;grid-template-columns:repeat(14,1fr);gap:3px;margin-top:9px}
+.track i{height:6px;border-radius:2px;background:var(--line);position:relative}
+.track i.past{background:var(--muted);opacity:.5}
+.track i.now{background:var(--accent)}
+.track i.h::after{content:"";position:absolute;left:50%;top:9px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--accent)}
+.trackcap{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin-top:12px}
+
+/* turn */
+.turn{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;margin-top:12px;padding:10px 14px;border-radius:12px;background:var(--pc);color:#fff}
+.turn b{font-family:var(--display);font-weight:400;font-size:18px}
+.turn .pill{margin-left:auto;background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.4);color:#fff}
+.workers{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;color:var(--muted);margin:7px 2px 0;font-variant-numeric:tabular-nums}
+.workers span{display:inline-flex;align-items:center;gap:5px}
+.workers i{width:8px;height:8px;border-radius:50%;background:var(--pc);display:inline-block}
+.order{display:flex;flex-direction:column;gap:3px;margin-top:9px}
+.prow{display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 9px;border-radius:9px;min-height:30px}
+.prow.now{background:var(--raised);box-shadow:inset 0 0 0 1.5px var(--pc)}
+.prow .dot{margin-right:0}
+.pname{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:7em}
+.houses{display:inline-flex;align-items:center;gap:2px}
+.hs{width:15px;height:15px;display:block}
+.extra{display:inline-flex;gap:1px;margin-left:2px}
+.extra .ic{width:13px;height:13px;color:var(--pc)}
+.grow{font-size:11px;font-weight:700;color:var(--minor);white-space:nowrap}
+.first{font-size:10px;font-weight:700;letter-spacing:.04em;border:1px solid var(--accent);color:var(--accent);border-radius:4px;padding:0 4px;white-space:nowrap}
+.wl{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12.5px}
+.arow{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.arow .ic{width:26px;height:26px}
+.aname{flex:1;min-width:0;display:flex;flex-direction:column}
+.step{display:flex;align-items:center;gap:8px}
+.step b{min-width:1.4em;text-align:center;font-size:17px;font-variant-numeric:tabular-nums}
+.step .btn{width:38px;padding:7px 0;font-size:18px;line-height:1}
+.recap{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+.recap li{display:flex;gap:9px;align-items:baseline;font-size:14px;line-height:1.35}
+.recap li i{flex:none;width:9px;height:9px;border-radius:50%;background:var(--pc);transform:translateY(-1px)}
+.recap li.sys{color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+.recent{margin:8px 2px 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted)}
+.recent li:first-child{color:var(--ink)}
+
+/* resources */
+.res{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 5px;border-radius:999px;background:var(--raised);border:1px solid var(--line);font-variant-numeric:tabular-nums;font-weight:700;font-size:14px}
+.chip.zero{opacity:.4}
+.chip.food{border-color:var(--accent)}
+.pills{margin-left:auto;display:flex;gap:6px}
+
+/* tabs */
+.tabs{display:flex;gap:3px;margin-top:12px;padding:3px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.tabs button{flex:1;min-width:0;border:0;background:none;padding:8px 5px;border-radius:9px;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabs button.on{background:var(--raised);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.tabs.many button{font-size:12.5px;padding:8px 3px}
+.tabs.many .dot{margin-right:3px;width:8px;height:8px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--pc);margin-right:5px;vertical-align:1px}
+.cpu{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid currentColor;border-radius:4px;padding:0 3px;margin-left:5px;opacity:.75;vertical-align:1px}
+
+/* board */
+.sect{margin:18px 2px 8px;display:flex;align-items:baseline;gap:8px}
+.board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (min-width:520px){.board{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.space{position:relative;text-align:left;display:flex;flex-direction:column;gap:4px;padding:10px 11px 11px;border-radius:12px;border:1px solid var(--line);background:var(--raised);min-height:88px}
+.space:not(:disabled):active{transform:scale(.98)}
+.space:disabled{cursor:default}
+.space:disabled:not(.taken){opacity:.5}
+.space.taken{background:var(--surface)}
+.space.fresh{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.space.sel{border-color:var(--hl);box-shadow:inset 0 0 0 2px var(--hl)}
+.space.next{border-style:dashed;background:transparent;justify-content:center}
+.sname{font-family:var(--display);font-size:15px;line-height:1.2;padding-right:24px}
+.pile{display:flex;align-items:center;gap:6px;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.pile .ic{width:24px;height:24px}
+.pile.multi{font-size:16px;gap:8px}
+.pile.multi span{display:inline-flex;align-items:center;gap:2px}
+.pile.multi .ic{width:18px;height:18px}
+.rbadge{position:absolute;top:10px;right:10px;font-size:11px;color:var(--muted);letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.worker{position:absolute;right:8px;bottom:8px;color:var(--pc)}
+.worker .ic{width:24px;height:24px}
+.log{margin:18px 2px 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.log b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+
+/* farm */
+.farmhead{display:flex;align-items:baseline;gap:8px;margin-top:14px}
+.farmhead h2{font-size:20px}
+.farm{display:grid;grid-template-columns:8px repeat(5,minmax(0,1fr) 8px);grid-template-rows:8px repeat(3,auto 8px);padding:2px;background:var(--soil);border-radius:14px;margin-top:10px}
+.farm.fencing{grid-template-columns:16px repeat(5,minmax(0,1fr) 16px);grid-template-rows:16px repeat(3,auto 16px)}
+.edge{position:relative;border:0;padding:0;margin:0;background:none;min-width:0;min-height:0}
+.edge::after{content:"";position:absolute;border-radius:3px;background:transparent}
+.edge.h::after{left:-3px;right:-3px;top:50%;height:5px;transform:translateY(-50%)}
+.edge.v::after{top:-3px;bottom:-3px;left:50%;width:5px;transform:translateX(-50%)}
+.edge.fence::after{background:var(--fence)}
+button.edge{cursor:pointer}
+button.edge::after{background:rgba(255,255,255,.22)}
+button.edge.pend::after{background:var(--hl);box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.cell.preview{background:var(--grass);opacity:.85}
+.cell.tap{cursor:pointer}
+.hint.warn{color:var(--p2);font-weight:600}
+.hint.okline{color:var(--minor);font-weight:600}
+.cell{position:relative;aspect-ratio:1;max-width:100%;border:0;border-radius:7px;background:var(--meadow);padding:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+button.cell{cursor:pointer}
+.cell.room{align-items:flex-end;padding-bottom:6px}
+.cell.house-wood{background:repeating-linear-gradient(90deg,var(--wall-wood) 0 9px,var(--wall-wood2) 9px 10px)}
+.cell.house-clay{background:repeating-linear-gradient(0deg,var(--wall-clay) 0 7px,var(--wall-clay2) 7px 8px)}
+.cell.house-stone{background:repeating-linear-gradient(0deg,var(--wall-stone) 0 11px,var(--wall-stone2) 11px 12px),var(--wall-stone)}
+.roof{position:absolute;top:9%;left:20%;right:20%;height:26%;background:var(--roof);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.cell.field{background:repeating-linear-gradient(0deg,var(--furrow) 0 6px,var(--furrow2) 6px 9px)}
+.cell.pasture{background:var(--grass)}
+.barn{position:absolute;right:5px;top:5px;width:15px;height:13px;background:var(--roof);clip-path:polygon(50% 0,100% 38%,100% 100%,0 100%,0 38%)}
+
+.tag{display:inline-flex;align-items:center;gap:2px;background:var(--raised);color:var(--ink);border-radius:999px;padding:2px 7px 2px 3px;font-weight:700;font-size:13px;box-shadow:0 1px 2px rgba(0,0,0,.25);font-variant-numeric:tabular-nums}
+.tag .ic{width:16px;height:16px}
+.cell.can{outline:3px solid var(--hl);outline-offset:-2px;z-index:1}
+.cell.can::after{content:"";position:absolute;inset:0;background:var(--hl);opacity:.16}
+.cost{position:absolute;left:5px;bottom:5px;font-size:11px;font-weight:700;background:var(--hl);color:#2a1d02;border-radius:6px;padding:1px 5px;font-variant-numeric:tabular-nums}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 12px;margin-top:14px}
+.stat span{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.stat b{font-size:16px;font-variant-numeric:tabular-nums}
+.imps{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.imp{font-size:13px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--raised)}
+
+/* cards */
+.cards{margin-top:6px}
+.cardrow{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.cardrow:first-child{border-top:0}
+.cmain{flex:1;min-width:0}
+.ctype{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;font-weight:700;color:var(--accent)}
+.ctype.minor{color:var(--minor)}
+.cname{font-weight:700;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.ctext{font-size:12.5px;color:var(--muted);margin-top:2px}
+.cheld{display:inline-flex;align-items:center;gap:3px;font-size:12.5px;font-weight:700}
+.cheld .ic{width:15px;height:15px}
+
+/* buttons */
+.btn{border:1px solid var(--line);background:var(--raised);border-radius:10px;padding:10px 14px;font-weight:600;line-height:1.2}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.sm{padding:7px 11px;font-size:13.5px}
+.btn.wide{width:100%}
+.btn:disabled{opacity:.42;cursor:default}
+.btn .ic{display:inline-block;vertical-align:-4px}
+
+/* action panel + confirm bar */
+.panel{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--raised);border-top:1px solid var(--line);box-shadow:0 -10px 28px rgba(0,0,0,.18);border-radius:18px 18px 0 0;max-height:60vh;overflow:auto;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px))}
+.pin{max-width:588px;margin:0 auto;display:flex;flex-direction:column;gap:11px}
+.phead{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px}
+.phead h2{font-size:19px}
+.seg{display:flex;gap:4px;padding:3px;background:var(--surface);border:1px solid var(--line);border-radius:11px}
+.seg button{flex:1;border:0;background:none;padding:7px 8px;border-radius:8px;font-weight:600;font-size:14px}
+.seg button.on{background:var(--raised);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.seg button:disabled{opacity:.35;cursor:default}
+.hint{font-size:14px;margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px}
+.pbtns{display:flex;gap:8px;position:sticky;bottom:0;background:var(--raised);padding-top:4px}
+.pbtns .btn{flex:1}
+.costs{display:inline-flex;gap:6px;align-items:center;font-weight:700;font-variant-numeric:tabular-nums}
+.costs span{display:inline-flex;align-items:center;gap:2px}
+.costs .ic{width:16px;height:16px}
+
+/* improvements */
+.maj{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.maj:first-child{border-top:0}
+.mmain{flex:1;min-width:0}
+.mname{font-weight:700}
+.pts{font-weight:600;font-size:12px;color:var(--accent)}
+.mtxt{font-size:12.5px;color:var(--muted);margin-top:2px}
+.mact{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.owned{font-size:12.5px;font-weight:700;color:#fff;background:var(--pc);border-radius:999px;padding:3px 10px;white-space:nowrap}
+
+/* kitchen + feed */
+.kit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.kit .btn{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px}
+.feed{margin-top:16px;display:flex;flex-direction:column;gap:12px}
+.needbox{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.needbox div{background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.needbox span{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.needbox b{font-family:var(--display);font-weight:400;font-size:30px;font-variant-numeric:tabular-nums}
+.short b{color:var(--p2)}
+
+/* sheets */
+.scrim{position:fixed;inset:0;z-index:30;background:rgba(10,12,8,.45);display:flex;align-items:flex-end}
+.sheet{width:100%;max-height:86vh;overflow:auto;background:var(--raised);border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+.sin{max-width:588px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.sin h2{font-size:22px}
+.sin h3{font-size:16px;margin-top:6px}
+.sin p,.sin li{font-size:14px;margin:0;max-width:65ch}
+.sin ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
+.shead{display:flex;align-items:center;gap:10px}
+.shead .pill{margin-left:auto}
+.setting{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.setting div{flex:1;min-width:0}
+
+/* toast */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:40;max-width:min(92vw,520px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.with-panel .toast{bottom:calc(60vh + 10px)}
+.with-confirm .toast{bottom:170px}
+
+/* setup */
+.setup{display:flex;flex-direction:column;gap:16px;padding-block:28px 20px}
+.logo{font-size:56px;line-height:.95;letter-spacing:-.01em}
+.furrows{height:10px;border-radius:5px;background:repeating-linear-gradient(90deg,var(--furrow) 0 14px,var(--furrow2) 14px 20px);max-width:220px}
+.lede{font-size:16px;margin:0;max-width:40ch;color:var(--muted)}
+.setup .farm{margin-top:0}
+.field-in{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600;color:var(--muted)}
+.field-in input{font:inherit;font-size:16px;color:var(--ink);background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:11px 12px;width:100%}
+.names{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.box{border:1px solid var(--line);background:var(--raised);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.box h2{font-size:20px}
+.box p{margin:0;font-size:14px}
+.pick{display:flex;flex-direction:column;gap:5px}
+.pick>span{font-size:13px;font-weight:600;color:var(--muted)}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--minor)}
+
+/* end */
+.end{margin-top:16px;display:flex;flex-direction:column;gap:14px}
+.winner{font-size:30px}
+.tbl{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px}
+.tbl th,.tbl td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl thead th{font-weight:600;color:var(--muted);font-size:12.5px}
+.tbl tfoot td{font-weight:700;font-size:17px;border-bottom:0}
+.neg{color:var(--p2)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div id="app"></div>
+
+<script>
+const KEY='furrow-save-v1';
+const COLS=5, ROWS=3;
+const R=['wood','clay','reed','stone','grain','veg','food'];
+const A=['sheep','boar','cattle'];
+const NAME={wood:'wood',clay:'clay',reed:'reed',stone:'stone',grain:'grain',veg:'vegetable',food:'food',sheep:'sheep',boar:'boar',cattle:'cattle'};
+const HARVESTS=[4,7,9,11,13,14];
+const PERM2=['forest','copse','clayPit','reedBank','fishing','grainSeeds','laborer','lessons','farmland','rooms','meeting'];
+const PERM3=[...PERM2,'grove','hollow','lessons2'];
+const PERM4=[...PERM3,'market','fair'];
+const PERM5=[...PERM4,'oddjobs','marsh','yard','nursery','animalfair','stonepit','pond'];
+const permFor=n=>n>=5?PERM5:n===4?PERM4:n===3?PERM3:PERM2;
+const BOTNAMES=['Hollis','Marlow','Wren','Ivy'];
+const MAXP=5;
+
+const SPACES={
+  forest:{name:'Forest',acc:{wood:3}},
+  copse:{name:'Copse',acc:{wood:1}},
+  clayPit:{name:'Clay Pit',acc:{clay:1}},
+  reedBank:{name:'Reed Bank',acc:{reed:1}},
+  fishing:{name:'Fishing',acc:{food:1}},
+  grainSeeds:{name:'Grain Seeds',gain:{grain:1}},
+  laborer:{name:'Day Laborer',gain:{food:2}},
+  lessons:{name:'Lessons',kind:'lessons',desc:'Play 1 occupation (first is free, then 1 food)'},
+  farmland:{name:'Farmland',kind:'plow',desc:'Plow 1 field'},
+  rooms:{name:'Farm Expansion',kind:'build',desc:'Build rooms and/or stables'},
+  meeting:{name:'Meeting Place',kind:'meeting',desc:'Go first next round, +1 food, may play 1 minor improvement'},
+  grove:{name:'Grove',acc:{wood:2}},
+  hollow:{name:'Hollow',acc:{clay:2}},
+  lessons2:{name:'Evening Lessons',kind:'lessons',fee:2,desc:'Play 1 occupation for 2 food'},
+  market:{name:'Market',gain:{reed:1,stone:1,food:1}},
+  fair:{name:'Street Fair',acc:{food:1}},
+  oddjobs:{name:'Odd Jobs',gain:{food:1,wood:1}},
+  marsh:{name:'Marsh',acc:{reed:1}},
+  yard:{name:"Builder's Yard",kind:'build',desc:'Build rooms and/or stables'},
+  nursery:{name:'Nursery',kind:'growth',from:5,desc:'New family member (needs a spare room), may play 1 minor improvement'},
+  animalfair:{name:'Animal Fair',gain:{sheep:1,food:1}},
+  stonepit:{name:'Stone Pit',acc:{stone:1}},
+  pond:{name:'Mill Pond',acc:{food:1}},
+  major:{name:'Major Improvement',kind:'major',desc:'Build 1 major or minor improvement',stage:1},
+  fencing:{name:'Fencing',kind:'fence',desc:'Fence pastures',stage:1},
+  sowBake:{name:'Grain Utilization',kind:'sow',desc:'Sow and/or bake bread',stage:1},
+  sheepMkt:{name:'Sheep Market',acc:{sheep:1},stage:1},
+  quarryW:{name:'Western Quarry',acc:{stone:1},stage:2},
+  houseRedev:{name:'House Redevelopment',kind:'renoMajor',desc:'Renovate, then 1 major or minor improvement',stage:2},
+  growth:{name:'Family Growth',kind:'growth',desc:'New family member (needs a spare room), may play 1 minor improvement',stage:2},
+  vegSeeds:{name:'Vegetable Seeds',gain:{veg:1},stage:3},
+  boarMkt:{name:'Pig Market',acc:{boar:1},stage:3},
+  cattleMkt:{name:'Cattle Market',acc:{cattle:1},stage:4},
+  quarryE:{name:'Eastern Quarry',acc:{stone:1},stage:4},
+  urgentGrowth:{name:'Urgent Growth',kind:'growth2',desc:'New family member, no room needed',stage:5},
+  cultivation:{name:'Cultivation',kind:'plowSow',desc:'Plow 1 field and/or sow',stage:5},
+  farmRedev:{name:'Farm Redevelopment',kind:'renoFence',desc:'Renovate, then fence',stage:6},
+};
+const STAGES={1:['major','fencing','sowBake','sheepMkt'],2:['quarryW','houseRedev','growth'],3:['vegSeeds','boarMkt'],4:['cattleMkt','quarryE'],5:['urgentGrowth','cultivation'],6:['farmRedev']};
+
+const MAJORS={
+  fp1:{name:'Fireplace',cost:{clay:2},pts:1,cook:'fp',txt:'Cook anytime: vegetable 2, sheep 2, boar 2, cattle 3 food. Bake: grain → 2.'},
+  fp2:{name:'Fireplace',cost:{clay:3},pts:1,cook:'fp',txt:'Same as the other Fireplace.'},
+  ch1:{name:'Cooking Hearth',cost:{clay:4},pts:1,cook:'ch',txt:'Cook anytime: vegetable 3, sheep 2, boar 3, cattle 4 food. Bake: grain → 3. Or swap in a Fireplace you own.'},
+  ch2:{name:'Cooking Hearth',cost:{clay:5},pts:1,cook:'ch',txt:'Same as the other Cooking Hearth.'},
+  clayOven:{name:'Clay Oven',cost:{clay:3,stone:1},pts:2,oven:true,txt:'When baking: 1 grain → 5 food. You may bake as soon as you build it.'},
+  stoneOven:{name:'Stone Oven',cost:{clay:1,stone:3},pts:3,oven:true,txt:'When baking: up to 2 grain → 4 food each. You may bake as soon as you build it.'},
+  joinery:{name:'Joinery',cost:{wood:2,stone:2},pts:2,craft:'wood',rate:2,bonus:[3,5,7],txt:'Each harvest: 1 wood → 2 food. Game end: 3/5/7 wood → 1/2/3 pts.'},
+  pottery:{name:'Pottery',cost:{clay:2,stone:2},pts:2,craft:'clay',rate:2,bonus:[3,5,7],txt:'Each harvest: 1 clay → 2 food. Game end: 3/5/7 clay → 1/2/3 pts.'},
+  basket:{name:'Basketmaker',cost:{reed:2,stone:2},pts:2,craft:'reed',rate:3,bonus:[2,4,5],txt:'Each harvest: 1 reed → 3 food. Game end: 2/4/5 reed → 1/2/3 pts.'},
+  well:{name:'Well',cost:{wood:1,stone:3},pts:4,txt:'+1 food at the start of each of the next 5 rounds.'},
+};
+const COOK={fp:{veg:2,sheep:2,boar:2,cattle:3,bake:2},ch:{veg:3,sheep:2,boar:3,cattle:4,bake:3}};
+
+/* ---------- cards: occupations and minor improvements ---------- */
+const less=(k,n)=>(p,c)=>{if(c[k]!==undefined)c[k]=Math.max(0,c[k]-n);return c};
+const CARDS={
+  // Occupations: each one does a single distinct thing.
+  woodsman:{type:'occ',name:'Woodsman',text:'Whenever you take wood from Forest, Grove or Copse, get 1 extra wood.',take:{forest:{wood:1},grove:{wood:1},copse:{wood:1}}},
+  brickmaker:{type:'occ',name:'Brickmaker',text:'Whenever you take Clay Pit or Hollow, get 1 extra clay.',take:{clayPit:{clay:1},hollow:{clay:1}}},
+  reedcutter:{type:'occ',name:'Reed Cutter',text:'Whenever you take Reed Bank or Marsh, get 1 extra reed.',take:{reedBank:{reed:1},marsh:{reed:1}}},
+  quarryman:{type:'occ',name:'Quarryman',text:'Whenever you take stone from a quarry or Stone Pit, get 1 extra stone.',take:{quarryW:{stone:1},quarryE:{stone:1},stonepit:{stone:1}}},
+  angler:{type:'occ',name:'Angler',text:'Whenever you take Fishing, Mill Pond or Street Fair, get 1 extra food.',take:{fishing:{food:1},pond:{food:1},fair:{food:1}}},
+  fieldhand:{type:'occ',name:'Field Hand',text:'Whenever you take Day Laborer, also get 1 grain.',take:{laborer:{grain:1}}},
+  peddler:{type:'occ',name:'Peddler',text:'Whenever you take Grain Seeds or Vegetable Seeds, also get 1 food.',take:{grainSeeds:{food:1},vegSeeds:{food:1}}},
+  midwife:{type:'occ',name:'Midwife',text:'Whenever your family grows, get 2 food.',take:{growth:{food:2},nursery:{food:2},urgentGrowth:{food:2}}},
+  carpenter:{type:'occ',name:'Carpenter',text:'Rooms cost you 2 less wood, clay or stone.',roomCost:(p,c)=>{c[p.house]=Math.max(0,c[p.house]-2);return c}},
+  thatcher:{type:'occ',name:'Thatcher',text:'Rooms and renovations cost you 1 less reed.',roomCost:less('reed',1),renoCost:less('reed',1)},
+  mason:{type:'occ',name:'Mason',text:'Renovations cost you 2 less clay or stone.',renoCost:(p,c)=>{for(const k of ['clay','stone'])if(c[k]!==undefined)c[k]=Math.max(0,c[k]-2);return c}},
+  plowman:{type:'occ',name:'Plowman',text:'Farmland and Cultivation let you plow 1 extra field.',plow:{farmland:1,cultivation:1}},
+  seedkeeper:{type:'occ',name:'Seed Keeper',text:'Each field you sow with grain gets 1 extra grain.',sow:{grain:1}},
+  gardener:{type:'occ',name:'Gardener',text:'Each field you sow with vegetables gets 1 extra vegetable.',sow:{veg:1}},
+  baker:{type:'occ',name:'Baker',text:'Every grain you bake gives 1 extra food.',bake:1},
+  shepherd:{type:'occ',name:'Shepherd',text:'Get 1 sheep now. Your farm holds 2 extra sheep.',pen:{cap:2,allow:['sheep']},onPlay:p=>{p.animals.sheep++;return '+1 sheep.'}},
+  stockkeeper:{type:'occ',name:'Stockkeeper',text:'Each room in your house holds 1 animal of any kind, instead of a single pet for the whole house.',pen:{cap:1,n:p=>Math.max(0,count(p,'room')-1)}},
+  trader:{type:'occ',name:'Animal Trader',text:'Get 1 sheep and 1 boar now.',onPlay:p=>{p.animals.sheep++;p.animals.boar++;return '+1 sheep, +1 boar.'}},
+  herder:{type:'occ',name:'Herder',text:'Each pasture holds 1 extra animal.',pastureBonus:1},
+  hedger:{type:'occ',name:'Hedger',text:'Each time you build fences, 1 fence piece is free.',fenceFree:1},
+  stablehand:{type:'occ',name:'Stablehand',text:'Stables cost you 1 wood.',cheapStable:true},
+  forager:{type:'occ',name:'Forager',text:'At the start of every even-numbered round, get 1 food.',round:(p,r)=>r%2===0?{food:1}:null},
+  tinker:{type:'occ',name:'Tinker',text:'At the start of every odd-numbered round, get 1 wood.',round:(p,r)=>r%2===1?{wood:1}:null},
+  scholar:{type:'occ',name:'Scholar',text:'Get 1 food now. Your later occupations cost no food.',freeOcc:true,onPlay:p=>{p.res.food++;return '+1 food.'}},
+  tutor:{type:'occ',name:'Tutor',text:'At game end, 1 point for each occupation you play after this one.',points:p=>{const k=p.cards.indexOf('tutor');return p.cards.slice(k+1).filter(id=>CARDS[id]&&CARDS[id].type==='occ').length}},
+  steward:{type:'occ',name:'Steward',text:'At game end, 1 point for each room beyond 3.',points:p=>Math.max(0,count(p,'room')-3)},
+  rationer:{type:'occ',name:'Rationer',text:'Each harvest, if your family has 4 or more people, it needs 1 less food.',feed:p=>p.members>=4?1:0},
+  granger:{type:'occ',name:'Granger',text:'Each harvest, if you have 3 or more fields, get 1 grain.',harvest:p=>count(p,'field')>=3?{grain:1}:null},
+  surveyor:{type:'occ',name:'Surveyor',text:'At game end, 2 points if your farm has no unused spaces.',points:p=>p.farm.some(c=>c.t==='empty'&&!c.stable)?0:2},
+
+  // Minor improvements.
+  barrow:{type:'minor',name:'Barrow',cost:{wood:1},pts:0,text:'Whenever you take Forest, also get 1 reed.',take:{forest:{reed:1}}},
+  seedsack:{type:'minor',name:'Seed Sack',cost:{reed:1},pts:0,text:'Grain Seeds gives you 1 extra grain. Vegetable Seeds gives you 1 extra vegetable.',take:{grainSeeds:{grain:1},vegSeeds:{veg:1}}},
+  fishnet:{type:'minor',name:'Fishing Net',cost:{reed:1},pts:0,text:'Whenever you take Fishing, get 1 extra food.',take:{fishing:{food:1}}},
+  hoe:{type:'minor',name:'Hoe',cost:{wood:1},pts:0,text:'Farmland lets you plow 1 extra field.',plow:{farmland:1}},
+  thatchrake:{type:'minor',name:'Thatch Rake',cost:{wood:2},pts:1,text:'Rooms and renovations cost you 1 less reed.',roomCost:less('reed',1),renoCost:less('reed',1)},
+  fenceposts:{type:'minor',name:'Fence Posts',cost:{wood:1},pts:0,text:'Each time you build fences, 2 fence pieces are free.',fenceFree:2},
+  trough:{type:'minor',name:'Drinking Trough',cost:{clay:1},pts:0,text:'Each pasture holds 2 extra animals.',pastureBonus:2},
+  leanto:{type:'minor',name:'Lean-to',cost:{wood:1},pts:0,text:'Holds 1 animal of any kind.',pen:{cap:1}},
+  pen:{type:'minor',name:'Animal Pen',cost:{wood:2},pts:1,text:'Holds up to 2 animals of one kind.',pen:{cap:2}},
+  manger:{type:'minor',name:'Manger',cost:{wood:2},pts:0,text:'At game end, points for the total size of your pastures: 6/7/8/10+ spaces give 1/2/3/4 points.',points:p=>{const n=count(p,'pasture');return n>=10?4:n>=8?3:n>=7?2:n>=6?1:0}},
+  quern:{type:'minor',name:'Quern',cost:{stone:1},pts:1,text:'Each harvest you may turn 1 grain into 3 food.',craft:{res:'grain',rate:3}},
+  bakestone:{type:'minor',name:'Bake Stone',cost:{clay:2},pts:1,text:'When baking: 1 grain → 4 food, once per bake action. You may bake as soon as you play it.',oven:{rate:4,max:1}},
+  spitroast:{type:'minor',name:'Spit Roast',cost:{clay:1},pts:0,text:'With a Fireplace or Cooking Hearth, each animal you cook gives 1 extra food.',cookBonus:1},
+  kitchengarden:{type:'minor',name:'Kitchen Garden',cost:{wood:2},pts:1,text:'Each harvest, get 1 food.',harvest:()=>({food:1})},
+  cheesepress:{type:'minor',name:'Cheese Press',cost:{wood:2},pts:1,text:'Each harvest, get 1 food per cattle you own (max 2).',harvest:p=>p.animals.cattle?{food:Math.min(2,p.animals.cattle)}:null},
+  woolcomb:{type:'minor',name:'Wool Comb',cost:{wood:1},pts:1,text:'Each harvest, get 1 food per 2 sheep you own (max 2).',harvest:p=>p.animals.sheep>=2?{food:Math.min(2,Math.floor(p.animals.sheep/2))}:null},
+  smokehouse:{type:'minor',name:'Smokehouse',cost:{clay:2},pts:1,text:'Each harvest, if you own 2 or more boar, get 1 food.',harvest:p=>p.animals.boar>=2?{food:1}:null},
+  beehive:{type:'minor',name:'Beehive',cost:{wood:1,reed:1},pts:1,text:'Each harvest, if you have 2 or more fields, get 1 food.',harvest:p=>count(p,'field')>=2?{food:1}:null},
+  henhouse:{type:'minor',name:'Henhouse',cost:{wood:2,reed:1},pts:1,text:'Get 1 food at the start of each of the next 5 rounds.',onPlay:p=>{for(let r=G.round+1;r<=Math.min(14,G.round+5);r++)p.pending[r]=(p.pending[r]||0)+1;return ''}},
+  sundial:{type:'minor',name:'Sundial',cost:{wood:1,clay:1},pts:0,text:'From round 10 on, get 1 food at the start of each round.',round:(p,r)=>r>=10?{food:1}:null},
+  stand:{type:'minor',name:'Roadside Stand',cost:{grain:1},pts:0,text:'Get 1 vegetable now.',onPlay:p=>{p.res.veg++;return '+1 vegetable.'}},
+  rootcellar:{type:'minor',name:'Root Cellar',cost:{wood:1,clay:1},pts:0,text:'At game end, 1 point per 2 vegetables (max 3).',points:p=>Math.min(3,Math.floor(vegTotal(p)/2))},
+  grainloft:{type:'minor',name:'Grain Loft',cost:{wood:3},pts:1,text:'At game end, 1 point per 3 grain (max 3).',points:p=>Math.min(3,Math.floor(grainTotal(p)/3))},
+  mixedgarden:{type:'minor',name:'Mixed Garden',cost:{wood:1},pts:0,text:'At game end, 2 points if you have both grain and vegetables.',points:p=>grainTotal(p)>0&&vegTotal(p)>0?2:0},
+  lumberrack:{type:'minor',name:'Lumber Rack',cost:{wood:2},pts:0,text:'At game end, 1 point per 3 wood you have (max 2).',points:p=>Math.min(2,Math.floor(p.res.wood/3))},
+  dovecote:{type:'minor',name:'Dovecote',cost:{stone:2},pts:2,text:'Worth 2 points.'},
+  flagstone:{type:'minor',name:'Flagstone Floor',cost:{stone:2},pts:0,text:'At game end, 2 points if you live in a stone house.',points:p=>p.house==='stone'?2:0},
+};
+
+const TOOLS={build:['room','stable'],plow:['plow'],fence:['pasture'],sow:['sow','bake'],plowSow:['plow','sow'],major:['major','minor'],renoMajor:['major','minor'],renoFence:['pasture'],lessons:['occ'],meeting:['minor'],growth:['minor']};
+const TOOLNAME={room:'Room',stable:'Stable',plow:'Plow',pasture:'Fences',sow:'Sow',bake:'Bake',major:'Major',minor:'Minor',occ:'Occupation'};
+const CELLTOOLS=['room','stable','plow','pasture','sow'];
+
+const ICON={
+  wood:'<rect x="1.5" y="4" width="13" height="8" rx="4" fill="#8b5a2b"/><circle cx="12" cy="8" r="2.7" fill="#dcae74"/><circle cx="12" cy="8" r="1" fill="#8b5a2b"/>',
+  clay:'<rect x="2" y="4" width="12" height="8" rx="1.6" fill="#c4683b"/><path d="M2 8h12M8 4v4M5 8v4M11 8v4" stroke="#8f4524" stroke-width="1"/>',
+  reed:'<path d="M4 15V5M8 15V2.5M12 15V5.5" stroke="#cdb15c" stroke-width="2" stroke-linecap="round"/><path d="M8 3l2.2 2.6M4 5l-1.8 2.2M12 5.5l2 1.8" stroke="#8f7a33" stroke-width="1.2" stroke-linecap="round"/>',
+  stone:'<path d="M2.5 11l1.2-5L8 3l5 2 1 5.5-4 3H5.5z" fill="#8e959b"/><path d="M8 3l1 5 5 2.5M9 8L3.7 6" stroke="#666d72" stroke-width=".9" fill="none"/>',
+  grain:'<path d="M8 15.5V6" stroke="#b5891c" stroke-width="1.4"/><ellipse cx="8" cy="4.6" rx="2" ry="3.4" fill="#e2b33c"/><ellipse cx="5.3" cy="8.4" rx="1.5" ry="2.6" transform="rotate(-32 5.3 8.4)" fill="#e2b33c"/><ellipse cx="10.7" cy="8.4" rx="1.5" ry="2.6" transform="rotate(32 10.7 8.4)" fill="#e2b33c"/>',
+  veg:'<path d="M4.2 5.5h7.6L8 15.5z" fill="#e07b2e"/><path d="M8 5.5L6 1.2M8 5.5V1M8 5.5l2.2-4" stroke="#4f8a32" stroke-width="1.5" stroke-linecap="round"/>',
+  food:'<path d="M2 11.5c0-4 2.7-6.3 6-6.3s6 2.3 6 6.3z" fill="#bd7d3e"/><rect x="2" y="10.8" width="12" height="2.6" rx="1.2" fill="#93592a"/><path d="M5.6 7.6l-.9 2M8.6 7l-.9 2.2M11.4 7.8l-.9 2" stroke="#f0c48a" stroke-width="1.1" stroke-linecap="round"/>',
+  sheep:'<g fill="#f4f2e8" stroke="#6b6658" stroke-width=".7"><circle cx="5.8" cy="8" r="3"/><circle cx="9.2" cy="7" r="3"/><circle cx="8.8" cy="10" r="2.6"/></g><ellipse cx="13" cy="8.6" rx="1.9" ry="1.6" fill="#3b3631"/><path d="M6 12.2v2.6M10 12.2v2.6" stroke="#3b3631" stroke-width="1.3"/>',
+  boar:'<ellipse cx="7.3" cy="8.6" rx="5.6" ry="3.9" fill="#4a3a35"/><ellipse cx="13.4" cy="9.1" rx="1.7" ry="1.5" fill="#d98a8f"/><path d="M4.5 12v2.6M9.5 12v2.6" stroke="#4a3a35" stroke-width="1.5"/><path d="M10.8 5.4l1.1-1.8" stroke="#4a3a35" stroke-width="1.4" stroke-linecap="round"/>',
+  cattle:'<rect x="1.6" y="5.6" width="10.2" height="6" rx="2.6" fill="#8a4b2a"/><circle cx="12.6" cy="7.5" r="2.3" fill="#8a4b2a"/><path d="M11.6 5.2l-.8-2.1M13.9 5.4l1-2" stroke="#ede2c8" stroke-width="1.1" stroke-linecap="round"/><path d="M4 11v3.3M9.4 11v3.3" stroke="#8a4b2a" stroke-width="1.5"/><circle cx="5.8" cy="8.1" r="1.5" fill="#f0e6d2"/>',
+  person:'<circle cx="8" cy="4.3" r="3" fill="currentColor"/><path d="M2.4 15.5c0-4.2 2.5-6.6 5.6-6.6s5.6 2.4 5.6 6.6z" fill="currentColor"/>'
+};
+const ic=k=>`<svg class="ic" viewBox="0 0 16 16" aria-hidden="true">${ICON[k]}</svg>`;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const plural=(k,n)=>n===1?NAME[k]:(k==='veg'?'vegetables':NAME[k]);
+const costHTML=c=>`<span class="costs">${Object.entries(c).map(([k,v])=>`<span>${ic(k)}${v}</span>`).join('')}</span>`;
+const gainText=g=>Object.entries(g).map(([k,v])=>`${v} ${plural(k,v)}`).join(', ');
+const pc=i=>`var(--p${i+1})`;
+
+/* ---------- state ---------- */
+let G=null, quiet=false;
+const ui={view:'board',act:null,sel:null,sheet:null,toast:'',tt:0,setup:{lp:1,lb:1,op:2,ob:0}};
+let prefConfirm=true;try{prefConfirm=localStorage.getItem('furrow-confirm')!=='off'}catch(e){}
+let prefRecap=true;try{prefRecap=localStorage.getItem('furrow-recap')!=='off'}catch(e){}
+const seen={};
+let mode='local';
+const net={db:null,ref:null,me:null,doc:null,rev:0,gid:null,ready:false,off:false,writing:false,dirty:false,pending:null,watch:false,lastMine:false};
+
+function save(){try{localStorage.setItem(KEY,JSON.stringify(G))}catch(e){}}
+function loadSave(){try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):null}catch(e){return null}}
+function clearSave(){try{localStorage.removeItem(KEY)}catch(e){}}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function flash(m){if(quiet)return;ui.toast=m;clearTimeout(ui.tt);ui.tt=setTimeout(()=>{ui.toast='';render()},3200)}
+function log(m){G.seq=(G.seq||0)+1;G.log.unshift({r:G.round,m,s:G.seq});G.log=G.log.slice(0,60)}
+const snapOf=()=>JSON.stringify(Object.assign({},G,{undo:null}));
+
+function mkPlayer(name,food,bot){
+  const farm=Array.from({length:ROWS*COLS},()=>({t:'empty',stable:false,crop:null,n:0}));
+  farm[5].t='room';farm[10].t='room';
+  return {name,bot:!!bot,res:{wood:0,clay:0,reed:0,stone:0,grain:0,veg:0,food},animals:{sheep:0,boar:0,cattle:0},house:'wood',farm,
+    members:2,workers:2,placed:0,newborns:0,begging:0,imps:[],well:0,crafted:{},harvestGot:{grain:0,veg:0,extra:[]},
+    hand:[],cards:[],pending:{},fences:[]};
+}
+function deal(g){
+  const ids=Object.keys(CARDS),n=g.players.length;
+  const occ=shuffle(ids.filter(i=>CARDS[i].type==='occ')),min=shuffle(ids.filter(i=>CARDS[i].type==='minor'));
+  const h=Math.min(7,Math.floor(occ.length/n),Math.floor(min.length/n));
+  g.players.forEach((p,i)=>{p.hand=[...occ.slice(i*h,(i+1)*h),...min.slice(i*h,(i+1)*h)];p.cards=p.cards||[];p.pending=p.pending||{}});
+}
+function newGame(specs){
+  const cards=[1,2,3,4,5,6].flatMap(s=>shuffle(STAGES[s]));
+  const perm=permFor(specs.length);const spaces={};perm.forEach(id=>spaces[id]={acc:{},occ:null});
+  const first=Math.floor(Math.random()*specs.length);
+  G={round:0,cards,revealed:[],perm,spaces,players:specs.map((s,i)=>mkPlayer(s.name,i===first?2:3,s.bot)),start:first,nextStart:first,turn:first,phase:'work',log:[],seq:0,
+     majors:Object.fromEntries(Object.keys(MAJORS).map(k=>[k,null])),feedIdx:first,fed:0,feedOrder:specs.map((_,k)=>(first+k)%specs.length),undo:null};
+  deal(G);log(`${G.players[first].name} was drawn to go first`);startRound();runBots();return G;
+}
+function migrate(g){
+  if(!g)return g;
+  g.perm=g.perm||PERM2;g.perm.forEach(id=>{if(!g.spaces[id])g.spaces[id]={acc:{},occ:null}});
+  g.players.forEach(p=>{if(!p.fences){const f=new Set();p.farm.forEach((c,i)=>{if(c.t==='pasture')edges(i).forEach(e=>f.add(e))});p.fences=[...f]}p.hand=(p.hand||[]).filter(id=>CARDS[id]);p.cards=(p.cards||[]).filter(id=>CARDS[id]);p.bot=!!p.bot;p.cards=p.cards||[];p.pending=p.pending||{};p.crafted=p.crafted||{};p.harvestGot=p.harvestGot||{grain:0,veg:0};p.harvestGot.extra=p.harvestGot.extra||[]});
+  if(!g.players[0].hand)deal(g);
+  if(!g.feedOrder||!g.feedOrder.length)g.feedOrder=g.players.map((_,k)=>(g.start+k)%g.players.length);
+  if(g.undo===undefined)g.undo=null;g.seq=g.seq||0;
+  return g;
+}
+function startRound(){
+  G.round++;
+  const nid=G.cards[G.round-1];G.revealed.push(nid);G.spaces[nid]={acc:{},occ:null};
+  for(const id in G.spaces){const s=G.spaces[id],d=SPACES[id];s.occ=null;if(d.acc)for(const k in d.acc)s.acc[k]=(s.acc[k]||0)+d.acc[k]}
+  G.start=G.nextStart;G.turn=G.start;
+  G.players.forEach(p=>{
+    p.workers=p.members;p.placed=0;p.newborns=0;
+    if(p.well>0){p.res.food++;p.well--}
+    if(p.pending[G.round]){p.res.food+=p.pending[G.round];delete p.pending[G.round]}
+    cardsOf(p,'round').forEach(c=>{const g=c.round(p,G.round);if(g)for(const k in g)give(p,k,g[k])});
+  });
+  G.phase='work';ui.view='board';
+  log(`Round ${G.round}: ${SPACES[nid].name} opens`);
+}
+
+/* ---------- rules helpers ---------- */
+const cur=()=>G.players[G.turn];
+const actorIdx=()=>G.phase==='feed'?G.feedIdx:G.turn;
+const actor=()=>G.players[actorIdx()];
+const has=(p,c)=>Object.entries(c).every(([k,v])=>p.res[k]>=v);
+const pay=(p,c)=>{for(const[k,v]of Object.entries(c))p.res[k]-=v};
+const cardsOf=(p,hook)=>p.cards.map(id=>CARDS[id]).filter(c=>c[hook]!==undefined);
+function nb(i){const r=Math.floor(i/COLS),c=i%COLS,o=[];if(r>0)o.push(i-COLS);if(r<ROWS-1)o.push(i+COLS);if(c>0)o.push(i-1);if(c<COLS-1)o.push(i+1);return o}
+const count=(p,t)=>p.farm.filter(c=>c.t===t).length;
+const stables=p=>p.farm.filter(c=>c.stable).length;
+const grainTotal=p=>p.res.grain+p.farm.reduce((s,c)=>s+(c.crop==='grain'?c.n:0),0);
+const vegTotal=p=>p.res.veg+p.farm.reduce((s,c)=>s+(c.crop==='veg'?c.n:0),0);
+function roomCost(p){let c={[p.house]:5,reed:2};cardsOf(p,'roomCost').forEach(k=>c=k.roomCost(p,c));return c}
+const stableCost=p=>cardsOf(p,'cheapStable').length?1:2;
+const canRoomAt=(p,i)=>p.farm[i].t==='empty'&&!p.farm[i].stable&&nb(i).some(j=>p.farm[j].t==='room');
+const canStableAt=(p,i)=>(p.farm[i].t==='empty'||p.farm[i].t==='pasture')&&!p.farm[i].stable&&stables(p)<4;
+function canPlowAt(p,i){const c=p.farm[i];if(c.t!=='empty'||c.stable)return false;const any=p.farm.some(x=>x.t==='field');return !any||nb(i).some(j=>p.farm[j].t==='field')}
+/* ---------- fences: single fence pieces on the edges between spaces ---------- */
+// h{r}_{c} is the edge above space (r,c), r 0..3. v{r}_{c} is the edge left of space (r,c), c 0..5.
+function edges(i){const r=Math.floor(i/COLS),c=i%COLS;return[`h${r}_${c}`,`h${r+1}_${c}`,`v${r}_${c}`,`v${r}_${c+1}`]}
+const EDGE_SIDES={},EDGE_BETWEEN={},CELL_EDGES=[];
+(()=>{for(let r=0;r<=ROWS;r++)for(let c=0;c<COLS;c++)EDGE_SIDES[`h${r}_${c}`]=[r>0?(r-1)*COLS+c:-1,r<ROWS?r*COLS+c:-1];
+  for(let r=0;r<ROWS;r++)for(let c=0;c<=COLS;c++)EDGE_SIDES[`v${r}_${c}`]=[c>0?r*COLS+c-1:-1,c<COLS?r*COLS+c:-1];
+  for(const e in EDGE_SIDES){const [a,b]=EDGE_SIDES[e];if(a>=0&&b>=0){EDGE_BETWEEN[a*100+b]=e;EDGE_BETWEEN[b*100+a]=e}}
+  for(let i=0;i<ROWS*COLS;i++)CELL_EDGES.push(edges(i))})();
+const edgeSides=e=>EDGE_SIDES[e];
+const edgeBetween=(i,j)=>EDGE_BETWEEN[i*100+j];
+const fenceSet=p=>new Set(p.fences||[]);
+function regions(F){
+  // Groups of spaces not separated by fences. A group is enclosed when no unfenced edge leads off the farm.
+  const comp=new Array(ROWS*COLS).fill(-1),list=[];
+  for(let s0=0;s0<ROWS*COLS;s0++){if(comp[s0]>=0)continue;const id=list.length,cells=[],q=[s0];comp[s0]=id;
+    while(q.length){const i=q.pop();cells.push(i);for(const j of nb(i))if(comp[j]<0&&!F.has(edgeBetween(i,j))){comp[j]=id;q.push(j)}}
+    let enclosed=true;for(const i of cells)for(const e of CELL_EDGES[i]){const sd=EDGE_SIDES[e];if((sd[0]<0||sd[1]<0)&&!F.has(e))enclosed=false}
+    list.push({cells,enclosed})}
+  return {comp,list};
+}
+const PG_CACHE=new Map();
+function pastureGroups(p){
+  // Cached by fence layout and which spaces are pasture; the same few layouts come up again and again.
+  const key=(p.fences||[]).slice().sort().join(',')+'|'+p.farm.map(c=>c.t==='pasture'?1:0).join('');
+  let g=PG_CACHE.get(key);
+  if(!g){const R=regions(fenceSet(p));g=R.list.filter(x=>x.enclosed&&x.cells.every(i=>p.farm[i].t==='pasture')).map(x=>x.cells);if(PG_CACHE.size>4000)PG_CACHE.clear();PG_CACHE.set(key,g)}
+  return g;
+}
+const fenceFree=p=>cardsOf(p,'fenceFree').reduce((t,c)=>t+c.fenceFree,0);
+function fenceCheck(p,pending){
+  // Every fence piece must border a complete pasture; pastures hold only meadow and must touch each other.
+  const old=fenceSet(p),F=new Set([...old,...pending]),add=[...new Set(pending)].filter(e=>!old.has(e));
+  const cost=Math.max(0,add.length-fenceFree(p)),R=regions(F),past=new Set();
+  const res=(ok,msg)=>({ok,msg,cost,add,pastures:[...past].map(k=>R.list[k].cells)});
+  R.list.forEach((g,k)=>{if(g.enclosed)past.add(k)});
+  for(const k of past)if(R.list[k].cells.some(i=>p.farm[i].t==='room'||p.farm[i].t==='field'))return res(false,'Fences can only enclose meadow, not rooms or fields.');
+  for(const e of F){const [a,b]=edgeSides(e);const ca=a<0?-1:R.comp[a],cb=b<0?-1:R.comp[b];
+    if(ca===cb)return res(false,'A fence piece is loose inside a pasture. Remove it, or use it to split the pasture in two.');
+    if(!past.has(ca)&&!past.has(cb))return res(false,'Every fence piece has to be part of a closed pasture.')}
+  const cells=[...past].flatMap(k=>R.list[k].cells);
+  if(cells.length){const set=new Set(cells),seen=new Set([cells[0]]),q=[cells[0]];while(q.length){const i=q.pop();for(const j of nb(i))if(set.has(j)&&!seen.has(j)){seen.add(j);q.push(j)}}
+    if(seen.size!==set.size)return res(false,'All your pastures have to touch each other.')}
+  if(F.size>15)return res(false,'You only have 15 fence pieces.');
+  if(cost>p.res.wood)return res(false,`These fences cost ${cost} wood. You have ${p.res.wood}.`);
+  return res(true,'');
+}
+function applyFences(p,pending){
+  const chk=fenceCheck(p,pending);if(!chk.ok)return false;
+  p.res.wood-=chk.cost;p.fences=[...new Set([...(p.fences||[]),...chk.add])];
+  const inP=new Set(chk.pastures.flat());p.farm.forEach((c,i)=>{if(inP.has(i))c.t='pasture'});
+  return true;
+}
+function boundary(p,cells){const F=fenceSet(p),set=new Set(cells),need=new Set();
+  for(const i of cells)for(const e of edges(i)){const [a,b]=edgeSides(e);const o=a===i?b:a;if((o<0||!set.has(o))&&!F.has(e))need.add(e)}
+  return [...need]}
+function fencePlans(p){
+  // Candidate new pastures for a computer: one space, two spaces, three in a row, or a 2x2 block of open meadow.
+  const plans=[],free=i=>i>=0&&i<ROWS*COLS&&p.farm[i].t==='empty';
+  const add=cells=>{const pend=boundary(p,cells);if(pend.length)plans.push({cells,pending:pend})};
+  for(let i=0;i<ROWS*COLS;i++){if(!free(i))continue;const r=Math.floor(i/COLS),c=i%COLS;add([i]);
+    if(c<COLS-1&&free(i+1)){add([i,i+1]);if(c<COLS-2&&free(i+2))add([i,i+1,i+2])}
+    if(r<ROWS-1&&free(i+COLS))add([i,i+COLS]);
+    if(c<COLS-1&&r<ROWS-1&&free(i+1)&&free(i+COLS)&&free(i+COLS+1))add([i,i+1,i+COLS,i+COLS+1])}
+  return plans.filter(pl=>fenceCheck(p,pl.pending).ok);
+}
+function renoCost(p){
+  if(p.house==='stone')return null;const n=count(p,'room');
+  let c={[p.house==='wood'?'clay':'stone']:n,reed:1};cardsOf(p,'renoCost').forEach(k=>c=k.renoCost(p,c));return c;
+}
+const canReno=p=>{const c=renoCost(p);return !!c&&has(p,c)};
+function cookRates(p){
+  let r=p.imps.some(x=>MAJORS[x].cook==='ch')?COOK.ch:p.imps.some(x=>MAJORS[x].cook==='fp')?COOK.fp:null;
+  const b=r?cardsOf(p,'cookBonus').reduce((t,c)=>t+c.cookBonus,0):0;
+  if(b)r={...r,sheep:r.sheep+b,boar:r.boar+b,cattle:r.cattle+b};
+  return r;
+}
+const ownedFp=pi=>['fp1','fp2'].find(f=>G.majors[f]===pi);
+const majorBuyable=(p,pi,id)=>G.majors[id]===null&&(has(p,MAJORS[id].cost)||(MAJORS[id].cook==='ch'&&!!ownedFp(pi)));
+function ovens(p){
+  const o=[];
+  if(p.imps.includes('clayOven'))o.push({key:'clayOven',rate:5,max:1});
+  if(p.imps.includes('stoneOven'))o.push({key:'stoneOven',rate:4,max:2});
+  p.cards.forEach(id=>{const v=CARDS[id].oven;if(v)o.push({key:id,rate:v.rate,max:v.max})});
+  return o.sort((a,b)=>b.rate-a.rate);
+}
+const occCount=p=>p.cards.filter(id=>CARDS[id].type==='occ').length;
+const occCost=p=>cardsOf(p,'freeOcc').length||occCount(p)===0?0:1;
+const occFee=(p,id)=>SPACES[id].fee!==undefined?(cardsOf(p,'freeOcc').length?0:SPACES[id].fee):occCost(p);
+const canOcc=(p,fee)=>p.hand.some(id=>CARDS[id].type==='occ')&&p.res.food>=fee;
+const canMinor=p=>p.hand.some(id=>CARDS[id].type==='minor'&&has(p,CARDS[id].cost));
+const canBuild=p=>(has(p,roomCost(p))&&p.farm.some((_,i)=>canRoomAt(p,i)))||(p.res.wood>=stableCost(p)&&p.farm.some((_,i)=>canStableAt(p,i)));
+const canPlow=p=>p.farm.some((_,i)=>canPlowAt(p,i));
+function canFence(p){
+  // Quick check used all the time: is there an open space you could afford to fence on its own?
+  const F=fenceSet(p),any=p.farm.some(c=>c.t==='pasture'),free=fenceFree(p);
+  return p.farm.some((c,i)=>{if(c.t!=='empty')return false;if(any&&!nb(i).some(j=>p.farm[j].t==='pasture'))return false;
+    const add=CELL_EDGES[i].filter(e=>!F.has(e)).length;return add>0&&Math.max(0,add-free)<=p.res.wood&&F.size+add<=15});
+}
+const canSow=p=>p.farm.some(c=>c.t==='field'&&!c.crop)&&(p.res.grain>0||p.res.veg>0);
+const canBake=p=>p.res.grain>0&&(ovens(p).length>0||!!cookRates(p));
+const canMajor=(p,pi)=>Object.keys(MAJORS).some(id=>majorBuyable(p,pi,id));
+
+function canTake(id,pi){
+  const p=G.players[pi],s=G.spaces[id],d=SPACES[id];
+  if(!s||s.occ!==null)return false;
+  if(d.from&&G.round<d.from)return false;
+  switch(d.kind){
+    case 'build':return canBuild(p);
+    case 'plow':return canPlow(p);
+    case 'fence':return canFence(p);
+    case 'sow':return canSow(p)||canBake(p);
+    case 'plowSow':return canPlow(p)||canSow(p);
+    case 'major':return canMajor(p,pi)||canMinor(p);
+    case 'renoMajor':case 'renoFence':return canReno(p);
+    case 'growth':return p.members<5&&count(p,'room')>p.members;
+    case 'growth2':return p.members<5;
+    case 'lessons':return canOcc(p,occFee(p,id));
+  }
+  return true;
+}
+
+/* ---------- animals: best fit into pastures, stables, pens and one house pet ---------- */
+function containers(p){
+  const out=[];const loose=cardsOf(p,'looseStable').length?2:1;const pb=cardsOf(p,'pastureBonus').reduce((s,c)=>s+c.pastureBonus,0);
+  pastureGroups(p).forEach(g=>{const st=g.filter(i=>p.farm[i].stable).length;out.push({i:Math.min(...g),cap:2*g.length*2**st+pb})});
+  p.farm.forEach((c,i)=>{if(c.t==='empty'&&c.stable)out.push({i,cap:loose})});
+  out.push({i:'pet',cap:1});
+  p.cards.forEach(id=>{const pen=CARDS[id].pen;if(!pen)return;const n=typeof pen.n==='function'?pen.n(p):1;for(let k=0;k<n;k++)out.push({i:'card:'+id+(k?':'+k:''),cap:pen.cap,allow:pen.allow})});
+  return out;
+}
+function solve(p,want){
+  const cs=containers(p);let layer=new Map([['0,0,0',null]]);const layers=[layer];
+  for(const k of cs){
+    const nx=new Map();
+    for(const key of layer.keys()){
+      const v=key.split(',').map(Number);
+      if(!nx.has(key))nx.set(key,{from:key,t:-1});
+      for(let t=0;t<3;t++){if(v[t]>=want[t])continue;if(k.allow&&!k.allow.includes(A[t]))continue;
+        const w=v.slice();w[t]=Math.min(want[t],w[t]+k.cap);const nk=w.join(',');if(!nx.has(nk))nx.set(nk,{from:key,t})}
+    }
+    layers.push(nx);layer=nx;
+  }
+  let best='0,0,0',bs=-1;
+  for(const key of layer.keys()){const v=key.split(',').map(Number);const sc=(v[0]+v[1]+v[2])*10+v[2]*2+v[1];if(sc>bs){bs=sc;best=key}}
+  const assign=new Array(cs.length).fill(-1);let key=best;
+  for(let j=cs.length;j>=1;j--){const e=layers[j].get(key);assign[j-1]=e.t;key=e.from}
+  return {kept:best.split(',').map(Number),cs,assign};
+}
+function settle(p){
+  const want=A.map(a=>p.animals[a]);const r=solve(p,want);const rates=cookRates(p);const msgs=[];
+  if(r.kept.every((k,j)=>k>=want[j]))return;
+  // A person chooses what to keep; computers keep the most valuable mix.
+  if(!p.bot&&!quiet){ui.animals={pi:G.players.indexOf(p),keep:r.kept.slice()};return}
+  A.forEach((a,j)=>{const over=want[j]-r.kept[j];if(over>0){p.animals[a]=r.kept[j];
+    if(rates){p.res.food+=over*rates[a];msgs.push(`cooked ${over} ${NAME[a]} for ${over*rates[a]} food`)}
+    else msgs.push(`had no room and released ${over} ${NAME[a]}`)}});
+  if(msgs.length){const m=`${p.name} ${msgs.join(' and ')}.`;flash(m);log(m)}
+}
+function arrange(p){
+  const r=solve(p,A.map(a=>p.animals[a]));const rem=r.kept.slice();const out={};
+  r.cs.forEach((k,j)=>{const t=r.assign[j];if(t<0)return;const n=Math.min(k.cap,rem[t]);if(n>0){out[k.i]={t:A[t],n};rem[t]-=n}});
+  return out;
+}
+const animalRoom=p=>containers(p).reduce((s,c)=>s+c.cap,0);
+function give(p,k,n){if(A.includes(k))p.animals[k]+=n;else p.res[k]+=n}
+function takeBonus(p,id){
+  const got=[];
+  p.cards.forEach(cid=>{const b=CARDS[cid].take&&CARDS[cid].take[id];if(b){for(const k in b)give(p,k,b[k]);got.push(`${gainText(b)} from ${CARDS[cid].name}`)}});
+  return got;
+}
+
+/* ---------- moves (shared by people and computer players) ---------- */
+function doTake(id){
+  const pi=G.turn,p=G.players[pi],d=SPACES[id],s=G.spaces[id];
+  const quick=!d.kind||d.kind==='growth2'||((d.kind==='meeting'||d.kind==='growth')&&!canMinor(p));
+  const immediate=()=>{
+    const got=[];
+    if(d.acc){for(const k in s.acc){give(p,k,s.acc[k]);got.push(`${s.acc[k]} ${plural(k,s.acc[k])}`)}s.acc={}}
+    if(d.gain)for(const k in d.gain){give(p,k,d.gain[k]);got.push(`${d.gain[k]} ${plural(k,d.gain[k])}`)}
+    if(d.kind==='meeting'){G.nextStart=pi;p.res.food++;got.push('1 food and first turn next round')}
+    if(d.kind==='growth'||d.kind==='growth2'){p.members++;p.newborns++;got.push('a new family member')}
+    got.push(...takeBonus(p,id));
+    return got;
+  };
+  s.occ=pi;p.placed++;
+  if(quick){const got=immediate();log(`${p.name} took ${got.join(', ')} (${d.name})`);settle(p);return}
+  const plowMax=1+cardsOf(p,'plow').reduce((t,c)=>t+(c.plow[id]||0),0);
+  const act={id,by:pi,kind:d.kind,n:0,plowed:0,plowMax,imp:0,occ:0,occFee:d.kind==='lessons'?occFee(p,id):0,bake:{},played:[],got:null,
+    crop:p.res.grain>0?'grain':'veg',tools:TOOLS[d.kind].slice(),note:'',pending:[]};
+  if(d.kind==='meeting'||d.kind==='growth'){act.got=immediate();act.n=1;act.note=`You got ${act.got.join(', ')}. You may also play a minor improvement.`}
+  if(d.kind==='renoMajor'||d.kind==='renoFence'){pay(p,renoCost(p));p.house=p.house==='wood'?'clay':'stone';act.n=1;act.note=`House renovated to ${p.house}.`;act.got=[`renovated to ${p.house}`]}
+  if(d.kind==='plow'&&plowMax>1)act.note=`Plow up to ${plowMax} fields.`;
+  ui.act=act;
+  act.tool=act.tools.find(t=>toolPossible(t,p,act))||act.tools[0];
+}
+function toolPossible(t,p,act){
+  if(t==='pasture')return canFence(p);
+  if(t==='bake')return canBake(p)&&!!nextBake(p,act);
+  if(t==='major')return canMajor(p,G.turn);
+  if(t==='minor')return canMinor(p);
+  if(t==='occ')return canOcc(p,act.occFee);
+  return p.farm.some((_,i)=>cellOk(t,p,i));
+}
+function cellOk(tool,p,i){
+  const c=p.farm[i];
+  switch(tool){
+    case 'room':return canRoomAt(p,i)&&has(p,roomCost(p));
+    case 'stable':return canStableAt(p,i)&&p.res.wood>=stableCost(p);
+    case 'plow':return ui.act.plowed<ui.act.plowMax&&canPlowAt(p,i);
+    case 'sow':return c.t==='field'&&!c.crop&&p.res[ui.act.crop]>0;
+  }
+  return false;
+}
+function why(tool,p){
+  switch(tool){
+    case 'room':return has(p,roomCost(p))?'Rooms go on an open space touching your house.':`A room needs ${gainText(roomCost(p))}.`;
+    case 'stable':return stables(p)>=4?'You already have 4 stables.':p.res.wood<stableCost(p)?`A stable needs ${stableCost(p)} wood.`:'Stables go on meadow or pasture, one per space.';
+    case 'plow':return ui.act.plowed>=ui.act.plowMax?`This action plows only ${ui.act.plowMax} field${ui.act.plowMax>1?'s':''}.`:'New fields go on open meadow next to your other fields.';
+    case 'sow':return p.res[ui.act.crop]?'Sow into an empty plowed field.':`You have no ${NAME[ui.act.crop]} to sow.`;
+  }
+  return '';
+}
+const sowAmount=(p,crop)=>(crop==='grain'?3:2)+cardsOf(p,'sow').reduce((t,c)=>t+(c.sow[crop]||0),0);
+function applyCell(i){
+  const act=ui.act,p=cur(),tool=act.tool,c=p.farm[i];
+  if(tool==='room'){pay(p,roomCost(p));c.t='room'}
+  else if(tool==='stable'){p.res.wood-=stableCost(p);c.stable=true}
+  else if(tool==='plow'){c.t='field';act.plowed++}
+  else if(tool==='sow'){p.res[act.crop]--;c.crop=act.crop;c.n=sowAmount(p,act.crop)}
+  act.n++;
+}
+function nextBake(p,act){
+  const bonus=cardsOf(p,'bake').reduce((t,c)=>t+c.bake,0);
+  const o=ovens(p).find(o=>(act.bake[o.key]||0)<o.max);
+  if(o)return{key:o.key,rate:o.rate+bonus};
+  const r=cookRates(p);return r?{key:'hearth',rate:r.bake+bonus}:null;
+}
+function applyBake(){const p=cur(),act=ui.act,o=nextBake(p,act);if(!o||p.res.grain<1)return false;p.res.grain--;p.res.food+=o.rate;act.bake[o.key]=(act.bake[o.key]||0)+1;act.n++;return true}
+function unlockBake(act,p){
+  if(!act.tools.includes('bake'))act.tools.push('bake');
+  act.note='Oven ready. You can bake bread now.';
+  if(!p.bot&&p.res.grain>0)act.tool='bake';
+}
+function applyMajor(id,swap){
+  const p=cur(),act=ui.act;if(!act||act.imp>=1||G.majors[id]!==null)return false;
+  if(swap){const f=ownedFp(G.turn);if(!f||MAJORS[id].cook!=='ch')return false;G.majors[f]=null;p.imps=p.imps.filter(x=>x!==f)}
+  else{if(!has(p,MAJORS[id].cost))return false;pay(p,MAJORS[id].cost)}
+  G.majors[id]=G.turn;p.imps.push(id);if(id==='well')p.well+=5;act.imp++;act.n++;act.played.push(MAJORS[id].name);
+  if(MAJORS[id].oven)unlockBake(act,p);
+  return true;
+}
+function applyCard(id){
+  const p=cur(),act=ui.act,c=CARDS[id];if(!act||!p.hand.includes(id))return '';
+  if(c.type==='occ'){if(act.occ>=1||p.res.food<act.occFee)return '';p.res.food-=act.occFee;act.occ++}
+  else{if(act.imp>=1||!has(p,c.cost))return '';pay(p,c.cost);act.imp++}
+  p.hand=p.hand.filter(x=>x!==id);p.cards.push(id);act.played.push(c.name);
+  let msg=`${c.name} played.`;if(c.onPlay){const m=c.onPlay(p);if(m)msg+=' '+m}
+  if(c.oven)unlockBake(act,p);
+  act.n++;settle(p);return msg;
+}
+function logAct(act){
+  const p=G.players[act.by];
+  let m=`${p.name} used ${SPACES[act.id].name}`;
+  if(act.got&&act.got.length)m+=` (${act.got.join(', ')})`;
+  if(act.played.length)m+=` and played ${act.played.join(', ')}`;
+  log(m);
+}
+function nextTurn(){
+  const n=G.players.length,left=i=>G.players[i].workers-G.players[i].placed;
+  for(let k=1;k<=n;k++){const i=(G.turn+k)%n;if(left(i)>0){G.turn=i;ui.view='board';return}}
+  endRound();
+}
+function endRound(){
+  if(!HARVESTS.includes(G.round)){startRound();return}
+  G.players.forEach(p=>{
+    let g=0,v=0;p.farm.forEach(c=>{if(c.crop){c.n--;if(c.crop==='grain'){p.res.grain++;g++}else{p.res.veg++;v++}if(c.n<=0){c.crop=null;c.n=0}}});
+    const extra=[];cardsOf(p,'harvest').forEach(c=>{const x=c.harvest(p);if(x){for(const k in x)give(p,k,x[k]);extra.push(`${gainText(x)} (${c.name})`)}});
+    p.harvestGot={grain:g,veg:v,extra};p.crafted={};
+  });
+  const n=G.players.length;G.feedOrder=G.players.map((_,k)=>(G.start+k)%n);
+  G.phase='feed';G.fed=0;G.feedIdx=G.feedOrder[0];ui.view='board';
+  log(`Harvest after round ${G.round}`);
+}
+const feedCut=p=>cardsOf(p,'feed').reduce((t,c)=>t+(typeof c.feed==='function'?c.feed(p):c.feed),0);
+const needFood=p=>Math.max(0,p.members*2-p.newborns-feedCut(p));
+function crafts(p){
+  const out=[];
+  p.imps.forEach(id=>{const m=MAJORS[id];if(m.craft)out.push({id,name:m.name,res:m.craft,rate:m.rate})});
+  p.cards.forEach(id=>{const c=CARDS[id].craft;if(c)out.push({id,name:CARDS[id].name,res:c.res,rate:c.rate})});
+  return out;
+}
+function doFeed(i){
+  const p=G.players[i],need=needFood(p),paid=Math.min(need,p.res.food),short=need-paid;
+  p.res.food-=paid;if(short>0){p.begging+=short;log(`${p.name} took ${short} begging card${short>1?'s':''}`)}
+  else log(`${p.name} fed the family`);
+}
+function breed(p){
+  const born=[];
+  for(const t of ['cattle','boar','sheep']){
+    if(p.animals[t]<2)continue;p.animals[t]++;
+    const r=solve(p,A.map(a=>p.animals[a]));
+    if(r.kept.reduce((a,b)=>a+b,0)<A.reduce((s,a)=>s+p.animals[a],0))p.animals[t]--;else born.push(NAME[t]);
+  }
+  return born;
+}
+function advanceFeed(){
+  G.fed++;
+  if(G.fed<G.players.length){G.feedIdx=G.feedOrder[G.fed];return}
+  const msgs=[];G.players.forEach(q=>{const b=breed(q);if(b.length)msgs.push(`${q.name} +1 ${b.join(', +1 ')}`)});
+  if(msgs.length){flash(`Newborn animals: ${msgs.join('; ')}.`);log(`Newborn animals: ${msgs.join('; ')}`)}
+  if(G.round>=14){G.phase='end';log('Game over')}else startRound();
+}
+
+/* ---------- computer players ---------- */
+// Weights for the computer players' judgment. Tuned by playing new versions against old ones.
+const W={worker:1.3,foodCost:0.25,spare:0.8,roomProg:0.3,room2Prog:0.15,start:1.8,startGrowth:1.2,deny:0.8,situ:0,cook:2.5,cookLeft:0.3,clayProg:0.5,field:1.0,crop:0.4,reedShare:0.5,extraField:0.3,spare2:0.6,marg:1,plan:1,mGrow:12,mFood:6,mRoom:5,mCook:4,mGather:1.5,mSow:2,mStart:2.5,mField:1.5,roll:0,rollK:3,rollN:1,rollGap:4,rollPlan:0.15,smartFeed:0,endRoll:1,endFrom:12,endK:4,occEarly:1,breed:0.35};
+var AI_W;
+const wOf=pi=>(AI_W&&AI_W[pi])||W;
+function evalP(pi){
+  const W=wOf(pi);
+  const p=G.players[pi],r=G.round,left=Math.max(0,14-r);
+  const harvLeft=HARVESTS.filter(h=>h>=r).length;
+  let v=total(p);
+  // Each person is an action in every remaining round, minus the food they eat at each harvest.
+  v+=p.members*(left*W.worker-harvLeft*2*W.foodCost);
+  const rooms=count(p,'room');
+  const canGrow=p.members<5&&r<=12;
+  if(canGrow){
+    // A spare room is a future family member: worth what that person adds from the round they could arrive, discounted for the wait.
+    const person=rr=>Math.max(0,(14-rr)*W.worker-HARVESTS.filter(h=>h>=rr).length*2*W.foodCost+3);
+    const g1=Math.max(r+1,5),first=person(g1)*W.spare,second=person(g1+2)*W.spare*W.spare2;
+    const spare=Math.max(0,rooms-p.members);
+    if(spare>=1)v+=first;
+    if(spare>=2&&p.members<4)v+=second;
+    if(spare<=1&&rooms<5){
+      // Saving toward the next room: full weight when no room is ready, smaller when one already is.
+      const rc=roomCost(p),mat=p.house;
+      const prog=(Math.min(p.res[mat],rc[mat])/Math.max(1,rc[mat]))*(1-W.reedShare)+(Math.min(p.res.reed,rc.reed)/Math.max(1,rc.reed))*W.reedShare;
+      v+=prog*(spare===0?W.roomProg*first:W.room2Prog*first);
+    }
+  }
+  // Going first next round: first pick of the board. Worth most when Family Growth is on the board,
+  // you have a room ready, and someone else could also grow, since there is only one growth space.
+  if(G.nextStart===pi&&r<14){
+    v+=W.start;
+    const growthUp=G.revealed.includes('growth')&&r<13;
+    const ready=p.members<5&&count(p,'room')>p.members;
+    const rival=G.players.some((q,qi)=>qi!==pi&&q.members<5&&count(q,'room')>q.members);
+    if(W.situ){if(growthUp&&ready)v+=W.startGrowth*(rival?1:0.4);else if(p.members<5&&[4,5,6].includes(r))v+=W.startGrowth*0.5}
+    else if(p.members<5&&[4,5,6,11,12].includes(r))v+=W.startGrowth;
+  }
+  const unused=p.farm.filter(c=>c.t==='empty'&&!c.stable).length;
+  v-=unused*(r>=10?0.5:r>=6?0.25:0);
+  if(vegTotal(p)===0&&r>=6)v-=0.8;
+  const RV={wood:.32,clay:.32,reed:.45,stone:.45,grain:.4,veg:.8};
+  for(const k in RV)v+=Math.min(p.res[k],10)*RV[k]+Math.max(0,p.res[k]-10)*RV[k]*0.25;
+  const nextH=HARVESTS.find(h=>h>=r)||14,roundsTo=nextH-r+1;
+  const need=needFood(p),rates=cookRates(p);
+  let potential=p.res.food+p.res.veg*(rates?rates.veg:1)+p.res.grain*0.8;
+  if(rates)potential+=A.reduce((s,a)=>s+Math.max(0,p.animals[a]-1)*rates[a]*0.6,0);
+  potential+=cardsOf(p,'harvest').length+crafts(p).length*1.5;
+  const short=Math.max(0,need-potential);
+  v-=short*(roundsTo<=1?3:roundsTo<=2?1.8:1.0);
+  v+=Math.min(p.res.food,need)*0.25+Math.max(0,p.res.food-need)*0.12;
+  // A cooking improvement is the backbone of feeding a growing family; clay saved toward one counts too.
+  const cookV=W.cook+W.cookLeft*left;
+  if(rates)v+=left>2?cookV:0.5;
+  else if(left>2&&['fp1','fp2','ch1','ch2'].some(id=>G.majors[id]===null))v+=Math.min(p.res.clay,2)/2*W.clayProg*cookV;
+  if(ovens(p).length)v+=1;
+  v+=p.cards.reduce((t,id)=>t+(CARDS[id].type==='occ'?(left>6?W.occEarly:left>3?1:0.3):(left>3?1:0.3)),0);
+  // Fields feed you, but past the third the next room or person matters more.
+  let nf=0;v+=p.farm.reduce((s,c)=>{if(c.t==='field')nf++;return s+(c.t==='field'?W.field*(left>3?1:0.3)*(nf<=3?1:W.extraField):0)+(c.crop?c.n*W.crop:0)},0);
+  v+=Math.min(animalRoom(p),10)*0.12;
+  // A breeding pair with room to grow turns into more animals at each harvest still to come.
+  if(W.breed){const room=animalRoom(p)-A.reduce((s,t)=>s+p.animals[t],0);let pairs=0;A.forEach(t=>{if(p.animals[t]>=2)pairs++});v+=Math.min(pairs,Math.max(0,room))*W.breed*Math.min(harvLeft,3)}
+  return v;
+}
+const cardVal=id=>{const c=CARDS[id];return (c.pts||0)+(c.harvest||c.round?1.2:0)+(c.pen||c.pastureBonus?0.6:0)+(c.take?0.5:0)+(c.roomCost?1:0)+Math.random()*0.5};
+function tryCell(p,act,i){
+  // Apply one farm step, and take it back if it leaves this player worse off.
+  const pi=G.players.indexOf(p);
+  if(!wOf(pi).marg||act.tool==='room'){applyCell(i);return true}
+  const before=evalP(pi),res={...p.res},cell={...p.farm[i]},plowed=act.plowed,n=act.n;
+  applyCell(i);
+  if(evalP(pi)<before-0.05){p.res=res;p.farm[i]=cell;act.plowed=plowed;act.n=n;return false}
+  return true;
+}
+function tryBake(p,act){
+  const pi=G.players.indexOf(p);
+  if(!wOf(pi).marg)return applyBake();
+  const before=evalP(pi),res={...p.res},bk={...act.bake},n=act.n;
+  if(!applyBake())return false;
+  if(evalP(pi)<before-0.05){p.res=res;act.bake=bk;act.n=n;return false}
+  return true;
+}
+function botTool(t,p,act){
+  const cells=()=>p.farm.map((_,i)=>i).filter(i=>cellOk(t,p,i));
+  let g=0;
+  if(t==='room'){while(g++<5){const rooms=count(p,'room');if(rooms>=Math.min(5,p.members+2))break;const c=cells();if(!c.length)break;act.tool=t;if(!tryCell(p,act,c[0]))break}}
+  else if(t==='stable'){const c=cells().filter(i=>p.farm[i].t==='pasture');if(c.length&&p.res.wood>=stableCost(p)+1)tryCell(p,act,c[0])}
+  else if(t==='plow'){while(act.plowed<act.plowMax&&g++<4){const c=cells();if(!c.length)break;c.sort((a,b)=>(a%COLS===0)-(b%COLS===0)||nb(b).filter(j=>p.farm[j].t==='field').length-nb(a).filter(j=>p.farm[j].t==='field').length);if(!tryCell(p,act,c[0]))break}}
+  else if(t==='pasture'){const pi=G.players.indexOf(p);while(g++<3){let plans=fencePlans(p);if(!plans.length)break;
+      plans=plans.map(pl=>({...pl,eff:pl.cells.length*2/Math.max(1,pl.pending.length-fenceFree(p))+Math.random()*0.2})).sort((a,b)=>b.eff-a.eff).slice(0,5);
+      const before=evalP(pi);let best=null,bv=before+0.05;
+      for(const pl of plans){const save={f:(p.fences||[]).slice(),t:p.farm.map(c=>c.t),w:p.res.wood};applyFences(p,pl.pending);const v=evalP(pi)-pl.cells.length*0.01;
+        p.fences=save.f;p.farm.forEach((c,i)=>c.t=save.t[i]);p.res.wood=save.w;if(v>bv){bv=v;best=pl}}
+      if(!best)break;applyFences(p,best.pending);act.n++;}}
+  else if(t==='sow'){while(g++<15){const e=p.farm.findIndex(c=>c.t==='field'&&!c.crop);if(e<0)break;const vegFields=p.farm.filter(c=>c.crop==='veg').length;
+    act.crop=(p.res.veg>0&&(vegFields===0||p.res.grain===0))?'veg':p.res.grain>0?'grain':p.res.veg>0?'veg':null;if(!act.crop)break;applyCell(e)}}
+  else if(t==='bake'){while(g++<6&&p.res.grain>0){const o=nextBake(p,act);if(!o)break;if(wOf(G.players.indexOf(p)).marg){if(!tryBake(p,act))break}else{if(!(o.rate>=4||p.res.food<needFood(p)+2))break;applyBake()}}}
+  else if(t==='major'){if(act.imp)return;const pri=cookRates(p)?['clayOven','stoneOven','well','joinery','pottery','basket']:['ch1','ch2','fp1','fp2'];
+    for(const id of pri)if(G.majors[id]===null&&has(p,MAJORS[id].cost)){applyMajor(id,false);break}}
+  else if(t==='minor'){if(act.imp)return;const o=p.hand.filter(id=>CARDS[id].type==='minor'&&has(p,CARDS[id].cost));if(o.length){o.sort((a,b)=>cardVal(b)-cardVal(a));applyCard(o[0])}}
+  else if(t==='occ'){if(act.occ)return;const o=p.hand.filter(id=>CARDS[id].type==='occ');if(o.length&&p.res.food>=act.occFee)applyCard(o[Math.floor(Math.random()*o.length)])}
+}
+function botAct(){const act=ui.act,p=cur();for(let i=0;i<act.tools.length;i++){act.tool=act.tools[i];botTool(act.tool,p,act)}}
+let BOT_DEPTH=1;
+function simGain(pi,id,base){
+  // Player pi's value after taking space id from the state in `base`, or null if the move does nothing.
+  const g0=G;G=JSON.parse(base);ui.act=null;const t0=G.turn;G.turn=pi;
+  try{doTake(id);let ok=true;if(ui.act){botAct();ok=ui.act.n>0;ui.act=null}return ok?{v:evalP(pi),g:G}:null}
+  finally{G=g0;void t0}
+}
+function oppLoss(pi){
+  // For each space: how much an opponent who still has workers this round would lose if pi took it first.
+  const base=snapOf(),loss={},ids=[...G.perm,...G.revealed];
+  G.players.forEach((o,oi)=>{
+    if(oi===pi||o.placed>=o.workers)return;
+    const b=evalP(oi),gains=[];
+    for(const id of ids){if(!canTake(id,oi))continue;const r=simGain(oi,id,base);if(r)gains.push({id,g:r.v-b})}
+    gains.sort((x,y)=>y.g-x.g);
+    if(gains.length>1){const d=gains[0].g-gains[1].g;if(d>0)loss[gains[0].id]=(loss[gains[0].id]||0)+d}
+  });
+  return loss;
+}
+function bestValue(pi,depth,top,vals){
+  // Best placement for player pi from the current G (a scratch copy), looking one placement further when it still has workers.
+  const base=snapOf();let best=null,bv=-Infinity;
+  const deny=top?oppLoss(pi):{};
+  for(const id of [...G.perm,...G.revealed]){
+    if(!canTake(id,pi))continue;
+    const r=simGain(pi,id,base);if(!r)continue;
+    let v=r.v;
+    const p=r.g.players[pi];
+    if(depth>0&&p.placed<p.workers){const g0=G;G=r.g;try{const f=bestValue(pi,depth-1,false).v;if(f>v)v+=0.7*(f-v)}finally{G=g0}}
+    v+=(deny[id]||0)*wOf(pi).deny+Math.random()*0.25;
+    if(vals)vals[id]=v;
+    if(v>bv){bv=v;best=id}
+  }
+  return {id:best,v:bv};
+}
+/* A strong player's priorities. The plan picks a move when one clearly matters; otherwise the scoring judgment decides. */
+const pileOf=id=>{const d=SPACES[id],s=G.spaces[id];let n=0;if(d.acc)for(const k in s.acc)n+=s.acc[k];if(d.gain)for(const k in d.gain)n+=d.gain[k];return n};
+function foodPotential(p){
+  const r=cookRates(p);let f=p.res.food+p.res.grain+p.res.veg*(r?r.veg:1);
+  if(r)f+=A.reduce((s,a)=>s+Math.max(0,p.animals[a]-2)*r[a],0);
+  f+=p.farm.filter(c=>c.crop).length;
+  f+=cardsOf(p,'harvest').length+crafts(p).filter(c=>p.res[c.res]>0).length*c_rate(p);
+  return f;
+}
+const c_rate=p=>2;
+function bestFoodSpace(pi,ids){
+  const base=snapOf(),b=foodPotential(G.players[pi]);let best=null,bv=0;
+  for(const id of ids){const r=simGain(pi,id,base);if(!r)continue;const gain=foodPotential(r.g.players[pi])-b;if(gain>bv){bv=gain;best=id}}
+  return best;
+}
+// In crowded 4-5 player games the plan stays light: food and cooking first, growth only when it is clearly sound.
+const CROWDED={mGrow:3,mRoom:1,mStart:0.5,mGather:0,mField:0.5,mSow:1};
+function planSpace(pi){
+  const W=G.players.length>=4?Object.assign({},wOf(pi),CROWDED):wOf(pi);
+  const p=G.players[pi],r=G.round,left=14-r;
+  const ids=[...G.perm,...G.revealed].filter(id=>canTake(id,pi));
+  const open=id=>ids.includes(id);
+  const rooms=count(p,'room'),spare=rooms-p.members;
+  // 1. Grow whenever possible.
+  if(p.members<5&&r<=13){
+    for(const g of ['growth','nursery'])if(open(g))return [g,W.mGrow];
+    if(open('urgentGrowth')&&foodPotential(p)+2>=needFood(p)+1)return ['urgentGrowth',W.mGrow*0.7];
+  }
+  // 2. Cover food before a harvest.
+  const harvestNow=HARVESTS.includes(r),harvestNext=HARVESTS.includes(r+1);
+  const short=needFood(p)-foodPotential(p);
+  if((harvestNow&&short>0)||(harvestNext&&short>=2)||short>=5){const f=bestFoodSpace(pi,ids);if(f)return [f,harvestNow?W.mFood:W.mFood*0.5]}
+  // 3. Build a room as soon as you can.
+  if(rooms<5&&p.members<5&&spare<=(r<=9?1:0)&&left>=2&&has(p,roomCost(p))){for(const b of ['rooms','yard'])if(open(b))return [b,W.mRoom]}
+  // 4. Get a cooking improvement early.
+  if(!cookRates(p)&&left>=3&&open('major')&&['ch1','ch2','fp1','fp2'].some(id=>G.majors[id]===null&&has(p,MAJORS[id].cost)))return ['major',W.mCook];
+  // 4b. Clay for a Fireplace or Hearth while one is still available.
+  const cookLeft=['fp1','fp2','ch1','ch2'].some(id=>G.majors[id]===null);
+  if(!cookRates(p)&&cookLeft&&left>=4&&p.res.clay<2){const c=['hollow','clayPit'].filter(open).sort((a,b)=>pileOf(b)-pileOf(a))[0];if(c&&pileOf(c)>=1)return [c,W.mGather]}
+  // 4c. Fill empty fields.
+  if(p.farm.some(c=>c.t==='field'&&!c.crop)&&(p.res.grain>0||p.res.veg>0)&&left>=2){for(const x of ['sowBake','cultivation'])if(open(x))return [x,W.mSow]}
+  // 5. Starting player when a growth is coming and you are ready for it.
+  if(open('meeting')&&G.nextStart!==pi&&p.members<5&&r<=12){
+    const growthAhead=G.revealed.includes('growth')||r>=4;
+    const ready=spare>=1||has(p,roomCost(p));
+    if(growthAhead&&ready)return ['meeting',W.mStart];
+  }
+  // 6. Gather what the next room needs, from the biggest pile.
+  if(p.members<5&&rooms<5&&left>=3&&spare<=0){
+    const rc=roomCost(p),mat=p.house;
+    const SRC={wood:['forest','grove','copse','oddjobs'],clay:['hollow','clayPit'],stone:['stonepit','quarryW','quarryE'],reed:['marsh','reedBank']};
+    const best=list=>list.filter(open).sort((a,b)=>pileOf(b)-pileOf(a))[0];
+    if(p.res.reed<rc.reed){const s2=best(SRC.reed);if(s2)return [s2,W.mGather]}
+    if(p.res[mat]<rc[mat]){const s2=best(SRC[mat]);if(s2&&pileOf(s2)>=2)return [s2,W.mGather]}
+  }
+  // 7. First two fields.
+  if(count(p,'field')<2&&left>=4&&open('farmland'))return ['farmland',W.mField];
+  return null;
+}
+function playOutRound(pi,id,base){
+  // Imagine taking `id`, then play the rest of the round with every player making their likely move. Return where pi ends up.
+  const g0=G;G=JSON.parse(base);ui.act=null;
+  try{
+    G.turn=pi;doTake(id);if(ui.act){botAct();ui.act=null}
+    const r0=G.round;let guard=0;nextTurn();
+    while(G.phase==='work'&&G.round===r0&&guard++<60){
+      const q=G.turn,pl=planSpace(q);let mv=pl?pl[0]:null;
+      if(!mv)mv=bestValue(q,0,false).id;
+      if(!mv){G.players[q].placed=G.players[q].workers;nextTurn();continue}
+      doTake(mv);if(ui.act){botAct();ui.act=null}nextTurn();
+    }
+    return evalP(pi);
+  }finally{G=g0;ui.act=null}
+}
+function playOutGame(pi,id,base){
+  const g0=G;G=JSON.parse(base);ui.act=null;
+  try{
+    G.turn=pi;doTake(id);if(ui.act){botAct();ui.act=null}
+    nextTurn();let guard=0;
+    while(G.phase!=='end'&&guard++<400){
+      if(G.phase==='feed'){botFeedSmart(G.feedIdx);doFeed(G.feedIdx);advanceFeed();continue}
+      const q=G.turn,pl=planSpace(q);let mv=pl?pl[0]:null;
+      if(!mv)mv=bestValue(q,0,false).id;
+      if(!mv){G.players[q].placed=G.players[q].workers;nextTurn();continue}
+      doTake(mv);if(ui.act){botAct();ui.act=null}nextTurn();
+    }
+    const mine=total(G.players[pi]),best=Math.max(...G.players.filter((_,k)=>k!==pi).map(total));
+    return mine+0.3*(mine-best);
+  }finally{G=g0;ui.act=null}
+}
+function chooseSpace(pi){
+  // The plan proposes; the scoring judgment can overrule it when the planned move looks clearly worse than the best one.
+  // When the top few moves are close, play the round out for each of them and pick the one that ends best.
+  if(typeof AI_OVERRIDE!=='undefined'&&AI_OVERRIDE&&AI_OVERRIDE[pi])return AI_OVERRIDE[pi](pi);
+  const real=G;
+  try{
+    const vals={},W_=wOf(pi);
+    const best=bestValue(pi,G.players.length>=4?0:BOT_DEPTH,true,vals);
+    G=real;
+    let choice=best.id,planned=null;
+    if(W_.plan){const pl=planSpace(pi);G=real;
+      if(pl&&vals[pl[0]]!==undefined&&vals[pl[0]]>=best.v-pl[1]){choice=pl[0];planned=pl}}
+    if(W_.endRoll&&G.round>=W_.endFrom){
+      const ranked=Object.entries(vals).sort((a,b)=>b[1]-a[1]);
+      const cands=ranked.slice(0,G.players.length>=4?2:G.players.length===3?3:W_.endK).map(x=>x[0]);if(planned&&!cands.includes(planned[0]))cands.push(planned[0]);
+      if(cands.length>1){const base=snapOf();let bestR=-Infinity,pick=choice;
+        for(const id of cands){const v=playOutGame(pi,id,base);if(v>bestR){bestR=v;pick=id}}
+        G=real;return pick}
+    }
+    if(W_.roll&&!planned){
+      const ranked=Object.entries(vals).sort((a,b)=>b[1]-a[1]);
+      const cands=ranked.filter(([,v])=>v>=ranked[0][1]-W_.rollGap).slice(0,W_.rollK).map(x=>x[0]);
+      if(planned&&!cands.includes(planned[0]))cands.push(planned[0]);
+      if(cands.length>1){
+        const base=snapOf();let bestR=-Infinity,pick=choice;const rv={};
+        for(const id of cands){let t=0;for(let k=0;k<W_.rollN;k++)t+=playOutRound(pi,id,base);rv[id]=t/W_.rollN+(planned&&id===planned[0]?planned[1]*W_.rollPlan:0);if(rv[id]>bestR){bestR=rv[id];pick=id}}
+        G=real;choice=pick;
+      }
+    }
+    return choice;
+  }finally{G=real;ui.act=null}
+}
+var AI_OVERRIDE;
+function botTurn(){
+  const pi=G.turn,id=chooseSpace(pi);
+  if(!id){G.players[pi].placed=G.players[pi].workers;log(`${G.players[pi].name} passed`);nextTurn();return}
+  doTake(id);
+  if(ui.act){botAct();const act=ui.act;ui.act=null;logAct(act)}
+  nextTurn();
+}
+function feedOptions(p){
+  const r=cookRates(p),o=[];
+  crafts(p).forEach(c=>{if(p.res[c.res]>0&&!p.crafted[c.id])o.push({food:c.rate,apply:()=>{p.res[c.res]--;p.res.food+=c.rate;p.crafted[c.id]=1}})});
+  if(r)A.forEach(t=>{if(p.animals[t]>0)o.push({food:r[t],pair:p.animals[t]===2,apply:()=>{p.animals[t]--;p.res.food+=r[t]}})});
+  if(p.res.veg>0)o.push({food:r?r.veg:1,apply:()=>{p.res.veg--;p.res.food+=r?r.veg:1}});
+  if(p.res.grain>0)o.push({food:1,apply:()=>{p.res.grain--;p.res.food++}});
+  return o;
+}
+function botFeedSmart(i){
+  // Make up the shortfall by giving up whatever costs the fewest points per food. Breeding pairs are worth keeping.
+  const p=G.players[i],need=needFood(p);let g=0;
+  while(p.res.food<need&&g++<40){
+    const opts=feedOptions(p);if(!opts.length)break;let best=null,bl=Infinity;
+    for(const o of opts){const snap=JSON.stringify({res:p.res,an:p.animals,cr:p.crafted});const before=total(p);o.apply();
+      let loss=(before-total(p))+(o.pair&&G.round<14?1.5:0);const r=JSON.parse(snap);p.res=r.res;p.animals=r.an;p.crafted=r.cr;
+      const per=loss/Math.min(o.food,need-p.res.food);if(per<bl){bl=per;best=o}}
+    if(!best||bl>3)break;best.apply();
+  }
+}
+function botFeed(){
+  const i=G.feedIdx,p=G.players[i],need=needFood(p),r=cookRates(p);
+  if(wOf(i).smartFeed){botFeedSmart(i);doFeed(i);advanceFeed();return}
+  crafts(p).forEach(c=>{if(p.res.food<need&&p.res[c.res]>0&&!p.crafted[c.id]){p.res[c.res]--;p.res.food+=c.rate;p.crafted[c.id]=1}});
+  let g=0;
+  while(p.res.food<need&&g++<40){
+    if(r){const t=A.find(a=>p.animals[a]>2);if(t){p.animals[t]--;p.res.food+=r[t];continue}}
+    if(p.res.veg>0){p.res.veg--;p.res.food+=r?r.veg:1;continue}
+    if(p.res.grain>1){p.res.grain--;p.res.food++;continue}
+    if(r){const t=A.slice().sort((a,b)=>r[b]-r[a]).find(a=>p.animals[a]>0);if(t){p.animals[t]--;p.res.food+=r[t];continue}}
+    if(p.res.grain>0){p.res.grain--;p.res.food++;continue}
+    break;
+  }
+  doFeed(i);advanceFeed();
+}
+function runBots(){
+  if(!G)return;const was=quiet;quiet=true;let g=0;
+  try{while(G.phase!=='end'&&actor().bot&&g++<500){if(G.phase==='work')botTurn();else botFeed()}}
+  finally{quiet=was}
+}
+// In a browser, computers take their turns one at a time so the screen can show who is thinking.
+const ASYNC_BOTS=typeof requestAnimationFrame==='function';
+function runBotsThen(done){
+  if(!ASYNC_BOTS){runBots();done();return}
+  const step=()=>{
+    if(!G||G.phase==='end'||!actor().bot){ui.busy=false;done();return}
+    ui.busy=true;render();
+    setTimeout(()=>{const was=quiet;quiet=true;try{if(G.phase==='work')botTurn();else botFeed()}finally{quiet=was}step()},60);
+  };
+  step();
+}
+
+/* ---------- people: turn flow, confirm, undo ---------- */
+const seat=()=>net.doc&&net.doc.seats?net.doc.seats.indexOf(net.me):-1;
+function mine(){if(!G||G.phase==='end')return false;const i=actorIdx();if(G.players[i].bot)return false;if(mode==='local')return true;return seat()===i}
+function me(){if(mode==='online'&&seat()>=0)return G.players[seat()];const a=actor();return a.bot?(G.players.find(p=>!p.bot)||a):a}
+const canUndo=()=>!!G&&!!G.undo&&!ui.act&&!ui.busy&&(mode==='local'||G.undo.by===seat());
+
+function pick(id){
+  if(G.phase!=='work'||ui.act||!mine()||!canTake(id,G.turn))return;
+  if(prefConfirm){ui.sel=ui.sel===id?null:id;render()}else take(id);
+}
+function take(id){
+  if(G.phase!=='work'||ui.act||!mine()||!canTake(id,G.turn))return;
+  ui.sel=null;const pi=G.turn,pre=snapOf(),full=JSON.stringify(G);
+  doTake(id);
+  if(ui.act){ui.act.snap=pre;ui.act.full=full;ui.view='p'+pi;render();window.scrollTo(0,0);return}
+  if(ui.animals){ui.animals.then={pre,label:SPACES[id].name,pi};render();return}
+  nextTurn();afterHuman(pre,SPACES[id].name,pi);
+}
+function afterHuman(pre,label,by){
+  G.undo={by,snap:pre,label};seen[by]=G.seq;
+  if(mode==='local')save();
+  runBotsThen(()=>{commit();render()});
+}
+function tapCell(i){
+  const act=ui.act;if(!act||!CELLTOOLS.includes(act.tool))return;const p=cur();
+  if(act.tool==='pasture'){
+    // Tap a space to fence around it, or tap again to take those new pieces back.
+    if(p.farm[i].t!=='empty'){flash('Pastures go on open meadow.');render();return}
+    const need=boundary(p,[i]);const all=need.every(e=>act.pending.includes(e));
+    act.pending=all?act.pending.filter(e=>!need.includes(e)):[...new Set([...act.pending,...need])];render();return}
+  if(!cellOk(act.tool,p,i)){flash(why(act.tool,p));render();return}
+  applyCell(i);render();
+}
+const fitsAnimals=(p,keep)=>solve(p,keep).kept.every((k,j)=>k>=keep[j]);
+function resolveAnimals(){
+  const a=ui.animals;if(!a)return;const p=G.players[a.pi];if(!fitsAnimals(p,a.keep))return;
+  const rates=cookRates(p),msgs=[];
+  A.forEach((t,j)=>{const over=p.animals[t]-a.keep[j];if(over>0){p.animals[t]=a.keep[j];
+    if(rates){p.res.food+=over*rates[t];msgs.push(`cooked ${over} ${NAME[t]} for ${over*rates[t]} food`)}else msgs.push(`let ${over} ${NAME[t]} run away`)}});
+  if(msgs.length)log(`${p.name} ${msgs.join(' and ')}`);
+  ui.animals=null;
+  if(a.then){nextTurn();afterHuman(a.then.pre,a.then.label,a.then.pi)}else render();
+}
+function animalHTML(){
+  const a=ui.animals,p=G.players[a.pi],rates=cookRates(p),fits=fitsAnimals(p,a.keep);
+  const cs=containers(p),room=cs.reduce((t,c)=>t+c.cap,0);
+  const rows=A.map((t,j)=>{if(!p.animals[t])return '';const over=p.animals[t]-a.keep[j];
+    const fate=over<=0?'keep all':rates?`cook ${over} → +${over*rates[t]} food`:`${over} run away`;
+    return `<div class="arow">${ic(t)}<div class="aname"><b>${NAME[t]}</b><span class="sub">have ${p.animals[t]} · ${fate}</span></div>
+      <div class="step"><button class="btn sm" data-do="akeep" data-t="${j}" data-d="-1"${a.keep[j]<=0?' disabled':''} aria-label="Keep fewer">−</button><b>${a.keep[j]}</b><button class="btn sm" data-do="akeep" data-t="${j}" data-d="1"${a.keep[j]>=p.animals[t]?' disabled':''} aria-label="Keep more">+</button></div></div>`}).join('');
+  return `<h2>Too many animals</h2>
+    <p class="sub">Your farm holds ${room} animals: each pasture holds one kind, stables and pens hold 1–2, and your house holds 1 pet. Choose what to keep. ${rates?'The rest go in the pot.':'Without a Fireplace or Cooking Hearth, the rest run away.'}</p>
+    ${rows}
+    ${fits?'':'<p class="hint warn">That mix doesn\'t fit. Each pasture or pen holds only one kind of animal.</p>'}
+    <button class="btn primary wide" data-do="animalsOk"${fits?'':' disabled'}>Keep these</button>`;
+}
+function tapEdge(e){const act=ui.act;if(!act||act.tool!=='pasture')return;if(fenceSet(cur()).has(e))return;
+  act.pending=act.pending.includes(e)?act.pending.filter(x=>x!==e):[...act.pending,e];render()}
+function bake(){if(applyBake())render()}
+function buyMajor(id,swap){if(applyMajor(id,swap)){flash(`${MAJORS[id].name} built.`);render()}}
+function playCard(id){const m=applyCard(id);if(m){flash(m);render()}}
+function finishAct(){
+  const act=ui.act;if(!act)return;
+  if(act.pending&&act.pending.length){const p=cur();const chk=fenceCheck(p,act.pending);if(!chk.ok){flash(chk.msg);render();return}
+    applyFences(p,act.pending);act.n++;act.played.push(`${chk.add.length} fence${chk.add.length>1?'s':''}`);act.pending=[];settle(p)}
+  if(!act.n)return;
+  logAct(act);ui.act=null;net.pending=null;nextTurn();afterHuman(act.snap,SPACES[act.id].name,act.by);
+}
+function cancelAct(){
+  if(!ui.act)return;G=JSON.parse(ui.act.full);ui.act=null;ui.view='board';
+  if(net.pending){const d=net.pending;net.pending=null;applyDoc(d)}
+  render();
+}
+function undo(){
+  if(!canUndo())return;const u=G.undo;
+  G=migrate(JSON.parse(u.snap));ui.act=null;ui.sel=null;ui.view='board';
+  log(`${G.players[u.by].name} took back ${u.label}`);
+  for(const k in seen)seen[k]=Math.min(seen[k],G.seq);seen[u.by]=G.seq;
+  flash(`Took back ${u.label}.`);commit();render();
+}
+function cook(k){
+  if(!mine())return;const p=actor(),r=cookRates(p);
+  if(A.includes(k)){if(!r||p.animals[k]<1)return;p.animals[k]--;p.res.food+=r[k]}
+  else if(k==='veg'){if(p.res.veg<1)return;p.res.veg--;p.res.food+=r?r.veg:1}
+  else if(k==='grain'){if(p.res.grain<1)return;p.res.grain--;p.res.food+=1}
+  if(!ui.act)commit();render();
+}
+function craft(id){
+  const p=actor();if(G.phase!=='feed'||!mine())return;
+  const c=crafts(p).find(x=>x.id===id);if(!c||p.crafted[id]||p.res[c.res]<1)return;
+  p.res[c.res]--;p.res.food+=c.rate;p.crafted[id]=1;commit();render();
+}
+function feed(){
+  if(!mine()||G.phase!=='feed')return;const i=G.feedIdx,pre=snapOf();
+  doFeed(i);advanceFeed();afterHuman(pre,'feeding',i);window.scrollTo(0,0);
+}
+
+/* ---------- online sync ---------- */
+const syncErr=e=>e&&e.code==='invalid_argument'?"This phone can't save moves. Ask the game's owner to share it with you as an Editor.":"That didn't sync. Check your connection and try again.";
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function commit(){
+  if(mode==='local'){save();return}
+  if(!net.ref||seat()<0)return;
+  net.rev++;net.dirty=true;flush();
+}
+async function flush(){
+  if(net.writing||!net.dirty)return;net.writing=true;net.dirty=false;
+  const body={status:'play',seats:net.doc.seats.slice(),gid:net.gid,rev:net.rev,g:JSON.parse(JSON.stringify(G))};
+  try{await net.ref.set(body)}catch(e){
+    flash(syncErr(e));net.dirty=false;
+    if(net.doc&&net.doc.g){G=migrate(JSON.parse(JSON.stringify(net.doc.g)));net.rev=net.doc.rev}
+    render();
+  }
+  net.writing=false;if(net.dirty)flush();
+}
+async function initNet(){
+  try{
+    if(!window.claude||!window.claude.use){net.off=true;net.ready=true;render();return}
+    const [db,user]=await Promise.all([window.claude.use('db'),window.claude.use('user')]);
+    const id=user?(u=>{if(!u)return u;let d=null;const K="dev_id";for(const s of ["localStorage","sessionStorage"]){try{d=d||window[s].getItem(K)}catch(e){}}if(!d){d=Math.random().toString(36).slice(2,10);for(const s of ["localStorage","sessionStorage"]){try{window[s].setItem(K,d)}catch(e){}}}return u+"~"+d})(await user.id()):null;
+    if(!db||!id){net.off=true;net.ready=true;render();return}
+    try{net.canWrite=user?await user.can('data.write'):null}catch(e){net.canWrite=null}
+    net.db=db;net.me=id;net.ref=db.doc('games/current');
+    net.ref.onSnapshot(snap=>{net.ready=true;net.doc=snap.exists?JSON.parse(JSON.stringify(snap.data())):null;applyDoc(net.doc);render()},
+      ()=>{net.off=true;net.ready=true;if(mode==='online')flash('Lost the connection to the online game. Reload the page to reconnect.');render()});
+  }catch(e){net.off=true;net.ready=true;render()}
+}
+function applyDoc(d){
+  const live=d&&d.status==='play'&&d.g&&(seat()>=0||net.watch);
+  if(live){
+    if(mode!=='online'&&G===null){mode='online';ui.act=null;ui.sel=null;ui.sheet=null;ui.view='board';net.rev=-1;net.gid=null}
+    if(mode==='online'){
+      if(ui.act)net.pending=d;
+      else if(d.gid!==net.gid||d.rev>=net.rev){G=migrate(JSON.parse(JSON.stringify(d.g)));net.gid=d.gid;net.rev=d.rev;if(ui.sel&&!mine())ui.sel=null;repairBots()}
+    }
+  }else if(mode==='online'){mode='local';G=null;ui.act=null;ui.sel=null;ui.sheet=null;net.watch=false;net.rev=0;net.gid=null;flash('The online game has ended.')}
+}
+function repairBots(){
+  // The phone that moves runs any computer turns before saving. If a saved game is ever left on a computer's turn, the lowest-seated person's phone finishes it.
+  if(!G||G.phase==='end'||!actor().bot||seat()<0)return;
+  const first=net.doc.seats.findIndex(Boolean);if(first!==seat())return;
+  const rev=net.rev;
+  setTimeout(()=>{if(net.rev!==rev||ui.act||!G||!actor().bot)return;runBots();commit();render()},1500);
+}
+async function hostGame(){
+  const name=(document.getElementById('hn')?.value||'').trim()||'Player 1';
+  const n=ui.setup.op,b=Math.min(ui.setup.ob,MAXP-n);
+  const seats=Array(n).fill(null);seats[0]=net.me;const names=Array(n).fill('');names[0]=name;
+  try{await net.ref.set({status:'lobby',seats,names,bots:b,rev:0})}catch(e){flash(syncErr(e));render()}
+}
+async function joinGame(){
+  const name=(document.getElementById('jn')?.value||'').trim()||'Player';
+  let ok=false;
+  for(let t=0;t<10&&!ok;t++){
+    try{const l=await net.ref.acquire({holder:net.me,ttlMs:1500});ok=!!l.acquired}
+    catch(e){if(e&&(e.code==='invalid_argument'||e.code==='not_granted'||e.code==='revoked')){net.canWrite=false;render();return}}
+    if(!ok)await sleep(400+Math.random()*500);
+  }
+  if(!ok){flash('Someone else is joining right now. Try again in a moment.');render();return}
+  let d;try{const s=await net.ref.get();d=s.exists?JSON.parse(JSON.stringify(s.data())):null}catch(e){flash(syncErr(e));render();return}
+  if(!d||d.status!=='lobby'){flash('That game is no longer open.');render();return}
+  if(d.seats.includes(net.me))return;
+  const i=d.seats.indexOf(null);if(i<0){flash('That game is already full.');render();return}
+  d.seats[i]=net.me;d.names[i]=name;
+  if(d.seats.every(Boolean)){
+    const table=shuffle([...d.names.map((nm,k)=>({name:nm||'Player',uid:d.seats[k]})),...BOTNAMES.slice(0,d.bots||0).map(nm=>({name:nm,bot:true,uid:null}))]);
+    newGame(table.map(t=>({name:t.name,bot:!!t.bot})));
+    const gid=Math.random().toString(36).slice(2,10);
+    const body={status:'play',seats:table.map(t=>t.uid),gid,rev:1,g:JSON.parse(JSON.stringify(G))};
+    mode='online';net.gid=gid;net.rev=1;net.doc=body;ui.view='board';render();
+    try{await net.ref.set(body)}catch(e){if(e&&e.code==='invalid_argument')net.canWrite=false;else flash(syncErr(e));mode='local';G=null;render()}
+  }else{
+    try{await net.ref.set(d)}catch(e){if(e&&e.code==='invalid_argument')net.canWrite=false;else flash(syncErr(e));render()}
+  }
+}
+function endOnline(){if(net.ref)net.ref.set({status:'idle',rev:0}).catch(e=>{flash(syncErr(e));render()})}
+function notifyTurn(){
+  const m=mode==='online'&&!!G&&G.phase!=='end'&&mine();
+  if(m&&!net.lastMine){try{if(navigator.vibrate)navigator.vibrate(150)}catch(e){}}
+  net.lastMine=m;document.title=m?'Your turn · Furrow':'Furrow';
+}
+
+/* ---------- scoring ---------- */
+function scoreRows(p){
+  const fields=count(p,'field'),pastures=pastureGroups(p).length;
+  const grain=grainTotal(p),veg=vegTotal(p);
+  const {sheep:s,boar:b,cattle:c}=p.animals;
+  const unused=p.farm.filter(x=>x.t==='empty'&&!x.stable).length;
+  const fenced=p.farm.filter(x=>x.t==='pasture'&&x.stable).length;
+  const rooms=count(p,'room');
+  let bonus=0;p.imps.forEach(id=>{const m=MAJORS[id];if(m.bonus){const n=p.res[m.craft];bonus+=n>=m.bonus[2]?3:n>=m.bonus[1]?2:n>=m.bonus[0]?1:0}});
+  const cardPts=p.cards.reduce((t,id)=>{const k=CARDS[id];return t+(k.pts||0)+(k.points?k.points(p):0)},0);
+  return [
+    ['Fields',fields<=1?-1:Math.min(4,fields-1)],
+    ['Pastures',pastures===0?-1:Math.min(4,pastures)],
+    ['Grain',grain===0?-1:grain<=3?1:grain<=5?2:grain<=7?3:4],
+    ['Vegetables',veg===0?-1:Math.min(4,veg)],
+    ['Sheep',s===0?-1:s<=3?1:s<=5?2:s<=7?3:4],
+    ['Boar',b===0?-1:b<=2?1:b<=4?2:b<=6?3:4],
+    ['Cattle',c===0?-1:c===1?1:c<=3?2:c<=5?3:4],
+    ['Unused spaces',-unused],
+    ['Fenced stables',fenced],
+    ['House rooms',p.house==='clay'?rooms:p.house==='stone'?rooms*2:0],
+    ['Family',p.members*3],
+    ['Major improvements',p.imps.reduce((s,id)=>s+MAJORS[id].pts,0)],
+    ['Craft bonus',bonus],
+    ['Cards',cardPts],
+    ['Begging',-3*p.begging],
+  ];
+}
+const total=p=>scoreRows(p).reduce((s,r)=>s+r[1],0);
+
+/* ---------- views ---------- */
+const turnOrder=()=>G.players.map((_,k)=>(G.start+k)%G.players.length);
+function housesHTML(p,i){
+  // One small house per room; filled for each family member living there. Empty houses are room to grow.
+  const rooms=count(p,'room'),c=pc(i);let h='';
+  for(let k=0;k<rooms;k++){const full=k<p.members;h+=`<svg class="hs" viewBox="0 0 14 14" aria-hidden="true"><path d="M1.6 6.6L7 2.2l5.4 4.4v5.9H1.6z" style="fill:${full?c:'none'};stroke:${c}" stroke-width="1.4" stroke-linejoin="round"/></svg>`}
+  const over=Math.max(0,p.members-rooms);
+  const extra=over?`<span class="extra">${Array.from({length:over},()=>ic('person')).join('')}</span>`:'';
+  return `<span class="houses" title="${p.members} people, ${rooms} rooms">${h}${extra}</span>`;
+}
+function orderHTML(){
+  const ai=actorIdx();
+  return `<div class="order">${turnOrder().map((i,k)=>{const p=G.players[i];
+    const canGrow=p.members<5&&count(p,'room')>p.members;
+    const left=G.phase==='work'?`${p.workers-p.placed} left`:'';
+    const tags=(k===0?'<span class="first">1st</span>':'')+(G.nextStart===i&&G.nextStart!==G.start?'<span class="first">1st next</span>':'');
+    return `<div class="prow${i===ai?' now':''}" style="--pc:${pc(i)}"><span class="dot"></span><span class="pname">${mode==='online'&&i===seat()?'You':esc(p.name)}</span>${p.bot?'<span class="cpu" style="margin-left:0">CPU</span>':''}${tags}${housesHTML(p,i)}${canGrow?'<span class="grow">room to grow</span>':''}<span class="wl">${left}</span></div>`}).join('')}</div>`;
+}
+function recapEntries(){
+  if(!G||!mine()||G.phase==='end')return [];
+  const i=actorIdx(),p=G.players[i],mine_=l=>l.m.startsWith(p.name+' ');
+  let since=seen[i];
+  if(since===undefined){const own=G.log.find(mine_);since=own?own.s:0}
+  return G.log.filter(l=>l.s>since&&!mine_(l)).reverse();
+}
+function recapHTML(){
+  const i=actorIdx(),p=G.players[i],items=recapEntries();
+  const who=l=>G.players.findIndex(q=>l.m.startsWith(q.name+' '));
+  const list=items.map(l=>{const w=who(l);return w<0?`<li class="sys">${esc(l.m)}</li>`:`<li style="--pc:${pc(w)}"><i></i><span>${esc(l.m)}</span></li>`}).join('');
+  const lead=mode==='online'?'Your turn':`${esc(p.name)}'s turn`;
+  return `<div class="shead"><h2>${lead}</h2></div><p class="sub">Since ${mode==='online'||G.players.filter(q=>!q.bot).length===1?'your':esc(p.name)+"'s"} last move:</p><ul class="recap">${list}</ul>
+  <button class="btn primary wide" data-do="recapOk">${G.phase==='feed'?'Go to feeding':'Got it'}</button>`;
+}
+const nameTag=(p,i)=>`${mode==='online'&&i===seat()?'You':esc(p.name)}${p.bot?'<span class="cpu">CPU</span>':''}`;
+function headerHTML(){
+  const r=G.round;const nextH=HARVESTS.find(h=>h>=r);
+  const cap=G.phase==='end'?'Game over':G.phase==='feed'?'Harvest in progress':nextH===r?'Harvest after this round':`Next harvest after round ${nextH}`;
+  return `<header class="top"><div class="brandrow"><span class="brand">Furrow</span><span class="rnd">Round <b>${Math.min(r,14)}</b> / 14</span><button class="pill" data-do="rules">Menu</button></div>
+  <div class="track">${Array.from({length:14},(_,i)=>`<i class="${i+1<r?'past':i+1===r?'now':''}${HARVESTS.includes(i+1)?' h':''}"></i>`).join('')}</div>
+  <div class="trackcap"><span>${cap}</span><span>Stage ${SPACES[G.cards[Math.min(r,14)-1]].stage}</span></div></header>`;
+}
+function statusHTML(){
+  const online=mode==='online',s=seat(),watching=online&&s<0;
+  const ai=actorIdx(),p=G.players[ai];
+  const undoBtn=canUndo()?`<button class="pill" data-do="undo">Undo ${esc(G.undo.label)}</button>`:'';
+  let label;
+  if(G.phase==='feed')label=mine()?`<span>Harvest:</span><b>${online?'feed your family':esc(p.name)+' feeds'}</b>`:`<span>Harvest:</span><b>${esc(p.name)} is feeding</b>`;
+  else if(mine())label=online?'<b>Your turn</b><span>place a worker</span>':`<b>${esc(p.name)}</b><span>places a worker</span>`;
+  else label=p.bot&&ui.busy?`<b>${esc(p.name)}</b><span>is thinking…</span>`:`<span>Waiting for</span><b>${esc(p.name)}</b>`;
+  const workers=orderHTML();
+  const extra=watching?`<p class="workers"><span class="live">Watching live</span><button class="pill" data-do="leave">Leave</button></p>`:online?'<p class="workers"><span class="live">Live on every player\'s phone</span></p>':'';
+  const recent=G.log.slice(0,3).map(l=>`<li>${esc(l.m)}</li>`).join('');
+  return `<div class="turn" style="--pc:${pc(ai)}">${label}${undoBtn}</div>${workers}${extra}<ul class="recent">${recent}</ul>`;
+}
+function resHTML(p){
+  const own=p===me()&&!(mode==='online'&&seat()<0)&&!p.bot;
+  const pills=own?`<span class="pills"><button class="pill" data-do="hand">Hand ${p.hand.length}</button>${G.phase==='work'&&mine()?'<button class="pill" data-do="kitchen">Kitchen</button>':''}</span>`:'';
+  return `<div class="res">${R.map(k=>`<span class="chip${p.res[k]?'':' zero'}${k==='food'?' food':''}" title="${NAME[k]}">${ic(k)}${p.res[k]}</span>`).join('')}${A.map(k=>`<span class="chip${p.animals[k]?'':' zero'}" title="${NAME[k]}">${ic(k)}${p.animals[k]}</span>`).join('')}${pills}</div>`;
+}
+function tabsHTML(){
+  if(ui.act)return '';
+  return `<nav class="tabs${G.players.length>=4?' many':''}"><button class="${ui.view==='board'?'on':''}" data-do="view" data-v="board">${G.phase==='feed'?'Harvest':'Board'}</button>${turnOrder().map(i=>{const p=G.players[i];return `<button class="${ui.view==='p'+i?'on':''}" data-do="view" data-v="p${i}" style="--pc:${pc(i)}"><span class="dot"></span>${mode==='online'&&i===seat()?'You':esc(p.name)}</button>`}).join('')}</nav>`;
+}
+function spaceHTML(id){
+  const d=SPACES[id],s=G.spaces[id];const taken=s.occ!==null;const able=G.phase==='work'&&!ui.act&&mine()&&canTake(id,G.turn);
+  const fresh=d.stage&&id===G.cards[G.round-1];let body='';
+  if(d.acc){const k=Object.keys(d.acc)[0];body=`<span class="pile">${ic(k)}${s.acc[k]||0}</span><span class="sub">+${d.acc[k]} each round</span>`}
+  else if(d.gain){const ks=Object.keys(d.gain);body=ks.length>1?`<span class="pile multi">${ks.map(k=>`<span>${ic(k)}+${d.gain[k]}</span>`).join('')}</span>`:`<span class="pile">${ic(ks[0])}+${d.gain[ks[0]]}</span>`}
+  else body=`<span class="sub">${d.from&&G.round<d.from?`Opens in round ${d.from}. `:''}${d.desc}</span>`;
+  const badge=d.stage?`<span class="rbadge">R${G.cards.indexOf(id)+1}</span>`:'';
+  const status=taken?`<span class="worker" style="--pc:${pc(s.occ)}" title="${esc(G.players[s.occ].name)}">${ic('person')}</span>`:'';
+  return `<button class="space${taken?' taken':''}${fresh?' fresh':''}${ui.sel===id?' sel':''}" data-do="pick" data-id="${id}"${able?'':' disabled'}><span class="sname">${d.name}</span>${body}${badge}${status}</button>`;
+}
+function boardHTML(){
+  const roundIds=G.revealed.slice().reverse();
+  const next=G.round<14?`<div class="space next"><span class="sname">Round ${G.round+1}</span><span class="sub">A new action opens</span></div>`:'';
+  return `<div class="sect"><h3>Round actions</h3><span class="sub">newest first</span></div><div class="board">${next}${roundIds.map(spaceHTML).join('')}</div>
+  <div class="sect"><h3>Every round</h3></div><div class="board">${G.perm.map(spaceHTML).join('')}</div>
+  <div class="row"><button class="btn sm" data-do="imps">Major improvements</button><button class="btn sm" data-do="log">Game log</button></div>`;
+}
+function cellHTML(p,i,arr,active,style,preview){
+  const c=p.farm[i];let cls='cell '+c.t+(preview&&preview.has(i)?' preview':''),inner='';
+  const firstRoom=p.farm.findIndex(x=>x.t==='room');
+  if(c.t==='room'){cls+=' house-'+p.house;inner+='<span class="roof"></span>';if(i===firstRoom&&arr.pet)inner+=`<span class="tag">${ic(arr.pet.t)}${arr.pet.n}</span>`}
+  if(c.t==='field'&&c.crop)inner+=`<span class="tag">${ic(c.crop)}${c.n}</span>`;
+  if(c.stable)inner+='<span class="barn"></span>';
+  if(arr[i])inner+=`<span class="tag">${ic(arr[i].t)}${arr[i].n}</span>`;
+  const st=style?` style="${style}"`:'';
+  if(active){if(ui.act.tool==='pasture'?c.t==='empty':cellOk(ui.act.tool,p,i))cls+=ui.act.tool==='pasture'?' tap':' can';
+    return `<button class="${cls}"${st} data-do="cell" data-i="${i}" aria-label="Farm space ${i+1}">${inner}</button>`}
+  return `<div class="${cls}"${st}>${inner}</div>`;
+}
+function farmGrid(p,active,arr){
+  // Spaces sit in a grid with thin tracks between them; fence pieces live in the tracks.
+  arr=arr||arrange(p);const F=fenceSet(p);
+  const edit=active&&ui.act&&ui.act.tool==='pasture',pend=new Set(edit?ui.act.pending:[]);
+  let preview=null;if(edit&&pend.size){const chk=fenceCheck(p,[...pend]);if(chk.ok)preview=new Set(chk.pastures.flat().filter(i=>p.farm[i].t==='empty'))}
+  let h='';
+  for(let r=0;r<=2*ROWS;r++)for(let c=0;c<=2*COLS;c++){
+    const st=`grid-row:${r+1};grid-column:${c+1}`,R=r%2,C=c%2;
+    if(R&&C){h+=cellHTML(p,((r-1)/2)*COLS+(c-1)/2,arr,active,st,preview);continue}
+    if(!R&&!C)continue;
+    const e=R?`v${(r-1)/2}_${c/2}`:`h${r/2}_${(c-1)/2}`,dir=R?'v':'h',has=F.has(e),pd=pend.has(e);
+    const cls=`edge ${dir}${has?' fence':''}${pd?' pend':''}`;
+    h+=edit&&!has?`<button class="${cls}" style="${st}" data-do="edge" data-e="${e}" aria-label="Fence piece"></button>`:`<span class="${cls}" style="${st}"></span>`;
+  }
+  return `<div class="farm${edit?' fencing':''}">${h}</div>`;
+}
+function cardRow(id,opts={}){
+  const c=CARDS[id];const heldAll=opts.arr?Object.entries(opts.arr).filter(([k])=>k==='card:'+id||k.startsWith('card:'+id+':')).map(([,v])=>v):[];
+  const held=heldAll.length?{t:heldAll[0].t,n:heldAll.reduce((t,v)=>t+(v.t===heldAll[0].t?v.n:0),0)}:null;
+  const meta=c.type==='minor'?`${costHTML(c.cost)}${c.pts?`<span class="pts">${c.pts} pt${c.pts>1?'s':''}</span>`:''}`:'';
+  return `<div class="cardrow"><div class="cmain"><div class="ctype${c.type==='minor'?' minor':''}">${c.type==='occ'?'Occupation':'Minor improvement'}</div>
+    <div class="cname">${c.name}${meta}${held?`<span class="cheld">${ic(held.t)}${held.n}</span>`:''}</div><div class="ctext">${c.text}</div></div>${opts.btn||''}</div>`;
+}
+function farmHTML(pi){
+  const p=G.players[pi];const active=!!ui.act&&pi===G.turn&&CELLTOOLS.includes(ui.act.tool);
+  const arr=arrange(p);
+  const people=Array.from({length:p.members},()=>`<span style="color:${pc(pi)};display:inline-block">${ic('person')}</span>`).join('');
+  return `<div class="farmhead"><h2 style="color:${pc(pi)}">${nameTag(p,pi)}</h2><span class="sub">${p.bot?'Computer player':''}</span></div>
+  ${farmGrid(p,active,arr)}
+  <div class="stats">
+    <div class="stat"><span>Family</span><b style="display:flex;gap:1px">${people}</b></div>
+    <div class="stat"><span>House</span><b>${count(p,'room')} ${p.house}</b></div>
+    <div class="stat"><span>Score now</span><b>${total(p)}</b></div>
+    <div class="stat"><span>Fences</span><b>${fenceSet(p).size} / 15</b></div>
+    <div class="stat"><span>Stables</span><b>${stables(p)} / 4</b></div>
+    <div class="stat"><span>Animal room</span><b>${animalRoom(p)}</b></div>
+    <div class="stat"><span>Harvest needs</span><b>${needFood(p)} food</b></div>
+    <div class="stat"><span>Begging</span><b>${p.begging}</b></div>
+    <div class="stat"><span>Cards in hand</span><b>${p.hand.length}</b></div>
+    ${p.well?`<div class="stat"><span>Well</span><b>${p.well} rounds</b></div>`:''}
+  </div>
+  ${p.imps.length?`<div class="imps">${p.imps.map(id=>`<span class="imp">${MAJORS[id].name}</span>`).join('')}</div>`:''}
+  ${p.cards.length?`<div class="sect"><h3>Played cards</h3><span class="sub">${p.cards.length}</span></div><div class="cards">${p.cards.map(id=>cardRow(id,{arr})).join('')}</div>`:''}`;
+}
+function majorsHTML(p,act){
+  return Object.keys(MAJORS).map(id=>{
+    const m=MAJORS[id],own=G.majors[id];let right='';
+    if(own!==null)right=`<span class="owned" style="--pc:${pc(own)}">${esc(G.players[own].name)}</span>`;
+    else if(act){const ok=act.imp<1;right=`<button class="btn sm primary" data-do="buy" data-id="${id}"${ok&&has(p,m.cost)?'':' disabled'}>Build</button>`;
+      if(m.cook==='ch'&&ownedFp(G.turn))right+=`<button class="btn sm" data-do="buy" data-id="${id}" data-swap="1"${ok?'':' disabled'}>Swap Fireplace</button>`}
+    return `<div class="maj"><div class="mmain"><div class="mname">${m.name} <span class="pts">${m.pts} pt${m.pts>1?'s':''}</span></div><div>${costHTML(m.cost)}</div><div class="mtxt">${m.txt}</div></div><div class="mact">${right}</div></div>`;
+  }).join('');
+}
+function handList(p,type,act){
+  const ids=p.hand.filter(id=>CARDS[id].type===type);
+  if(!ids.length)return `<p class="sub">No ${type==='occ'?'occupations':'minor improvements'} left in your hand.</p>`;
+  return `<div class="cards">${ids.map(id=>{
+    let btn='';
+    if(act){const ok=type==='occ'?act.occ<1&&p.res.food>=act.occFee:act.imp<1&&has(p,CARDS[id].cost);
+      btn=`<button class="btn sm primary" data-do="play" data-id="${id}"${ok?'':' disabled'}>Play</button>`}
+    return cardRow(id,{btn});
+  }).join('')}</div>`;
+}
+function panelHTML(){
+  const act=ui.act,p=cur(),d=SPACES[act.id];let body='';
+  const tools=act.tools.length>1?`<div class="seg">${act.tools.map(t=>`<button class="${act.tool===t?'on':''}" data-do="tool" data-t="${t}">${TOOLNAME[t]}</button>`).join('')}</div>`:'';
+  switch(act.tool){
+    case 'room':body=`<p class="hint">Tap a glowing space. Each room costs ${costHTML(roomCost(p))}</p>`;break;
+    case 'stable':body=`<p class="hint">Tap a glowing space. Each stable costs ${costHTML({wood:stableCost(p)})} · ${stables(p)}/4 built</p>`;break;
+    case 'plow':body=`<p class="hint">${act.plowed>=act.plowMax?'Done plowing.':`Tap a glowing space to plow. ${act.plowed} of ${act.plowMax} plowed.`}</p>`;break;
+    case 'pasture':{const chk=fenceCheck(p,act.pending),n=chk.add.length;
+      const status=!n?'':chk.ok?`<p class="hint okline">${(()=>{const k=chk.pastures.filter(g=>g.some(i=>p.farm[i].t==='empty')).length||1;return `Makes ${k} new pasture${k>1?'s':''}`})()}. Tap Done to build.</p>`:`<p class="hint warn">${chk.msg}</p>`;
+      body=`<p class="hint">Tap the gaps between spaces to place fence pieces, or tap a space to fence all around it. Each new fence piece costs 1 wood${fenceFree(p)?`, and ${fenceFree(p)} per action are free`:''}.</p>
+      <p class="hint"><b>${n} new fence${n===1?'':'s'}</b> · ${chk.cost} wood · ${fenceSet(p).size+n}/15 used${n?' <button class="pill" data-do="clearFences">Clear</button>':''}</p>${status}`;break}
+    case 'sow':body=`<div class="seg">${['grain','veg'].map(c=>`<button class="${act.crop===c?'on':''}" data-do="crop" data-c="${c}">${ic(c)} ${c==='grain'?'Grain':'Vegetable'} (${p.res[c]})</button>`).join('')}</div><p class="hint">Tap an empty field. 1 grain sows ${sowAmount(p,'grain')}, 1 vegetable sows ${sowAmount(p,'veg')}.</p>`;break;
+    case 'bake':{const o=nextBake(p,act);
+      const msg=!o?(ovens(p).length?'Your ovens are used up for this action. A Fireplace or Cooking Hearth would let you keep baking.':'You need a Fireplace, Cooking Hearth or oven to bake.'):!p.res.grain?'You have no grain to bake.':`Bake 1 grain into ${o.rate} food. Your best oven is used first.`;
+      body=`<p class="hint">${msg}</p><button class="btn primary" data-do="bake"${o&&p.res.grain?'':' disabled'}>${ic('grain')} Bake → +${o?o.rate:0} ${ic('food')}</button>`;break}
+    case 'major':body=act.imp?'<p class="hint">Improvement built.</p>':`<div>${majorsHTML(p,act)}</div>`;break;
+    case 'minor':body=act.imp?'<p class="hint">Improvement played.</p>':handList(p,'minor',act);break;
+    case 'occ':body=act.occ?'<p class="hint">Occupation played.</p>':`<p class="hint">Playing an occupation here costs ${act.occFee} food.</p>${handList(p,'occ',act)}`;break;
+  }
+  return `<div class="panel" role="dialog" aria-label="${d.name}"><div class="pin">
+    <div class="phead"><h2>${d.name}</h2><span class="sub">${act.note||d.desc||''}</span></div>
+    ${tools}${body}
+    <div class="pbtns"><button class="btn" data-do="cancel">Undo action</button>${(()=>{const pend=act.pending&&act.pending.length,ok=pend?fenceCheck(p,act.pending).ok:true,can=(act.n||pend)&&ok;return `<button class="btn primary" data-do="done"${can?'':' disabled'}>${!ok?'Fix the fences first':can?'Done':'Do at least one thing'}</button>`})()}</div>
+  </div></div>`;
+}
+function confirmHTML(){
+  if(!ui.sel||ui.act||!G||G.phase!=='work'||!mine())return '';
+  const id=ui.sel,d=SPACES[id],s=G.spaces[id];
+  const what=d.acc?`Take ${gainText(s.acc)}`:d.gain?`Take ${gainText(d.gain)}`:d.desc;
+  const verb=d.kind&&d.kind!=='growth2'?'Go':'Take it';
+  return `<div class="panel" role="dialog" aria-label="Confirm ${d.name}"><div class="pin">
+    <div class="phead"><h2>${d.name}</h2><span class="sub">${what}</span></div>
+    <div class="pbtns"><button class="btn" data-do="unsel">Cancel</button><button class="btn primary" data-do="confirm">${verb}</button></div>
+  </div></div>`;
+}
+function kitchenHTML(p,inFeed){
+  const r=cookRates(p);const btns=[];
+  A.forEach(a=>{if(p.animals[a])btns.push(`<button class="btn" data-do="cook" data-k="${a}"${r?'':' disabled'}>${ic(a)} → +${r?r[a]:0} ${ic('food')}</button>`)});
+  if(p.res.veg)btns.push(`<button class="btn" data-do="cook" data-k="veg">${ic('veg')} → +${r?r.veg:1} ${ic('food')}</button>`);
+  if(p.res.grain)btns.push(`<button class="btn" data-do="cook" data-k="grain">${ic('grain')} → +1 ${ic('food')}</button>`);
+  if(inFeed)crafts(p).forEach(c=>btns.push(`<button class="btn" data-do="craft" data-k="${c.id}"${p.crafted[c.id]||!p.res[c.res]?' disabled':''}>${c.name}: ${ic(c.res)} → +${c.rate} ${ic('food')}</button>`));
+  const note=r?'':'<p class="sub">Build a Fireplace or Cooking Hearth to cook animals and get more from vegetables. Bread is baked with Grain Utilization, or right after building an oven.</p>';
+  return `${btns.length?`<div class="kit">${btns.join('')}</div>`:'<p class="sub">Nothing to turn into food right now.</p>'}${note}`;
+}
+function feedHTML(){
+  const p=G.players[G.feedIdx],need=needFood(p),short=Math.max(0,need-p.res.food);
+  const y=G.players.map(q=>{const g=q.harvestGot;const parts=[];if(g.grain)parts.push(`+${g.grain} grain`);if(g.veg)parts.push(`+${g.veg} veg`);(g.extra||[]).forEach(e=>parts.push('+'+e));return `${esc(q.name)} ${parts.join(', ')||'no crops'}`}).join(' · ');
+  const left=G.players.length-G.fed-1;
+  const after=left>0?`Then ${left} more player${left>1?'s':''} feed, and`:'Then';
+  if(!mine())return `<section class="feed"><p class="eyebrow">Harvested: ${y}</p>
+    <div class="needbox${short?' short':''}"><div><span>${esc(p.name)} needs</span><b>${need}</b></div><div><span>Food in store</span><b>${p.res.food}</b></div></div>
+    <p class="sub">Waiting for ${esc(p.name)} to feed their family. ${after} animals with a pair breed if there's room.</p></section>`;
+  return `<section class="feed">
+    <p class="eyebrow">Harvested: ${y}</p>
+    <div class="needbox${short?' short':''}"><div><span>Food needed</span><b>${need}</b></div><div><span>Food in store</span><b>${p.res.food}</b></div></div>
+    <p class="sub">2 food per person${p.newborns?`, 1 for each of this round's ${p.newborns} newborn${p.newborns>1?'s':''}`:''}${feedCut(p)?`, ${feedCut(p)} less from Rationer`:''}. Each missing food is a begging card worth −3.</p>
+    <h3>Make food</h3>${kitchenHTML(p,true)}
+    <button class="btn primary wide" data-do="feed">${short?`Feed and take ${short} begging card${short>1?'s':''}`:`Feed family (−${need} food)`}</button>
+    <p class="sub">${after} animals with a pair breed if there's room.</p>
+  </section>`;
+}
+function endHTML(){
+  const ps=G.players,rows=ps.map(scoreRows),tots=ps.map(total),best=Math.max(...tots);
+  const win=ps.filter((_,i)=>tots[i]===best).map(p=>esc(p.name));
+  const head=win.length>1?`Tie: ${win.join(' and ')}`:`${win[0]} wins`;
+  const cell=v=>`<td class="${v<0?'neg':''}">${v>0?'+':''}${v}</td>`;
+  return `<section class="end"><p class="eyebrow">Final scores after 14 rounds</p><h1 class="winner">${head}</h1>
+  <div style="overflow-x:auto"><table class="tbl"><thead><tr><th></th>${ps.map((p,i)=>`<th style="color:${pc(i)}">${esc(p.name)}</th>`).join('')}</tr></thead>
+  <tbody>${rows[0].map((r,k)=>`<tr><td>${r[0]}</td>${rows.map(rr=>cell(rr[k][1])).join('')}</tr>`).join('')}</tbody>
+  <tfoot><tr><td>Total</td>${tots.map(t=>`<td>${t}</td>`).join('')}</tr></tfoot></table></div>
+  <div class="tabs${ps.length>=4?' many':''}" style="margin-top:0">${ps.map((p,i)=>`<button class="${ui.view==='p'+i?'on':''}" data-do="view" data-v="p${i}" style="--pc:${pc(i)}"><span class="dot"></span>${esc(p.name)}</button>`).join('')}</div>
+  ${ui.view.startsWith('p')?farmHTML(+ui.view.slice(1)):''}
+  <button class="btn primary wide" data-do="newgame">New game</button></section>`;
+}
+function sampleFarm(){
+  const p=mkPlayer('',0);p.house='clay';p.farm[0].t='room';
+  [[2,'grain',3],[3,'grain',2],[4,'veg',2]].forEach(([i,c,n])=>{p.farm[i].t='field';p.farm[i].crop=c;p.farm[i].n=n});
+  [8,9,13,14].forEach(i=>p.farm[i].t='pasture');p.fences=boundary(p,[8,9,13,14]);p.farm[14].stable=true;p.farm[7].stable=true;
+  p.animals={sheep:4,boar:1,cattle:2};return farmGrid(p,false);
+}
+function segPick(key,vals,cur,isOff){
+  return `<div class="seg">${vals.map(v=>`<button class="${cur===v?'on':''}" data-do="setup" data-k="${key}" data-v="${v}"${isOff&&isOff(v)?' disabled':''}>${v}</button>`).join('')}</div>`;
+}
+function onlineBox(){
+  let inner;
+  if(!net.ready)inner='<p class="sub">Connecting…</p>';
+  else if(net.off)inner='<p class="sub">Online play isn\'t available right now. Check your internet connection, then reload.</p>';
+  else{
+    const d=net.doc,st=d&&d.status,S=ui.setup;
+    const noWrite=net.canWrite===false?`<div class="setting"><div><b>This phone can watch but can't join or host.</b><p class="sub">The owner of Furrow needs to open the Share menu, turn off "Anyone with the link", and invite you by email as an Editor. Then reload this page.</p></div></div>`:'';
+    if(noWrite&&st!=='play')inner=(st==='lobby'?`<p><b>${esc(d.names[0]||'Someone')}</b> is hosting a game.</p>`:'')+noWrite;
+    else if(st==='lobby'){
+      const joined=d.seats.filter(Boolean).length,need=d.seats.length,bots=d.bots||0;
+      const roster=d.seats.map((u,i)=>u?esc(d.names[i]||'Player'):'open seat').join(', ')+(bots?`, ${bots} computer${bots>1?'s':''}`:'');
+      if(d.seats.includes(net.me))inner=`<p><b>Waiting for players.</b> ${joined} of ${need} people have joined.</p><p class="sub">${roster}</p><p class="sub">Others open Furrow on their phones, with the same table code, and tap Join.</p>${d.seats[0]===net.me?'<button class="btn" data-do="cancelHost">Cancel game</button>':''}`;
+      else inner=`<p><b>${esc(d.names[0]||'Someone')}</b> is hosting a game. ${joined} of ${need} people have joined.</p><p class="sub">${roster}</p><label class="field-in" for="jn">Your name<input id="jn" placeholder="Player" maxlength="14" autocomplete="off"></label><button class="btn primary wide" data-do="join">Join game</button>`;
+    }
+    else if(st==='play'&&d.g)inner=`<p>${d.g.players.map(p=>esc(p.name)).join(', ')} are playing, round ${d.g.round}.</p><div class="row" style="margin-top:0"><button class="btn" data-do="watch">Watch</button><button class="btn" data-do="newgame">End it and start over</button></div>`;
+    else inner=`<label class="field-in" for="hn">Your name<input id="hn" placeholder="Player 1" maxlength="14" autocomplete="off"></label>
+      <div class="pick"><span>People, including you</span>${segPick('op',[2,3,4,5],S.op)}</div>
+      <div class="pick"><span>Computer players</span>${segPick('ob',[0,1,2,3],S.ob,v=>S.op+v>MAXP)}</div>
+      <button class="btn primary wide" data-do="host">Host a game</button><p class="sub">Then each other person opens this page on their phone and taps Join. Seating order is drawn at random.</p>`;
+  }
+  return `<section class="box"><h2>Each on their own phone</h2>${inner}</section>`;
+}
+function setupHTML(){
+  const saved=loadSave();const canContinue=saved&&saved.phase!=='end';const S=ui.setup;
+  const names=Array.from({length:S.lp},(_,i)=>`<label class="field-in" for="n${i}">${S.lp===1?'Your name':`Player ${i+1}`}<input id="n${i}" placeholder="Player ${i+1}" maxlength="14" autocomplete="off"></label>`).join('');
+  return `<main class="setup"><h1 class="logo">Furrow</h1><div class="furrows"></div>
+  <p class="lede">Grow a family and a farm across fourteen rounds. Two to five players, people or computers, on one phone or several.</p>
+  ${sampleFarm()}
+  <section class="box"><h2>On this phone</h2><p class="sub">Play solo against the computer, or pass the phone between people.</p>
+  ${canContinue?`<button class="btn wide" data-do="continueLocal">Continue saved game (round ${saved.round})</button>`:''}
+  <div class="pick"><span>People</span>${segPick('lp',[1,2,3,4,5],S.lp)}</div>
+  <div class="pick"><span>Computer players</span>${segPick('lb',[0,1,2,3,4],S.lb,v=>S.lp+v>MAXP||S.lp+v<2)}</div>
+  <div class="names">${names}</div>
+  <button class="btn primary wide" data-do="start">Start game</button></section>
+  ${onlineBox()}
+  <button class="btn wide" data-do="rules">How to play</button></main>`;
+}
+function rulesHTML(){
+  return `<div class="shead"><h2>${G?'Menu':'How to play'}</h2><button class="pill" data-do="close">Close</button></div>
+  <div class="setting"><div><b>Confirm before taking a space</b><p class="sub">Tap a space to select it, then tap again to confirm. Stops accidental moves while scrolling.</p></div><button class="pill strong" data-do="toggleConfirm">${prefConfirm?'On':'Off'}</button></div>
+  <div class="setting"><div><b>Show what happened when your turn starts</b><p class="sub">A summary of every move since your last one, color-coded by player.</p></div><button class="pill strong" data-do="toggleRecap">${prefRecap?'On':'Off'}</button></div>
+  ${G&&mode==='local'?'<button class="btn wide" data-do="home">Back to home (game is saved)</button>':''}
+  ${G?'<button class="btn wide" data-do="newgame">End game and start a new one</button>':''}
+  <h3>Players</h3><ul><li>2 to 5 players, any mix of people and computers. Play solo, pass one phone around, or have each person on their own phone.</li><li>More players means more action spaces: 3 adds Grove, Hollow and Evening Lessons; 4 adds Market and Street Fair; 5 adds Odd Jobs, Marsh, Builder's Yard, Animal Fair, Stone Pit, Mill Pond, and a second growth space, Nursery, that opens in round 5. Everyone always gets 7 occupations and 7 minor improvements.</li><li>Computer players move instantly when their turn comes. Their moves appear in the recent-moves list and the game log.</li></ul>
+  <h3>Undo</h3><ul><li>After each move, an Undo button appears in the turn banner. It takes back your last move, along with any computer moves that followed it.</li><li>Online, only the person who made the move can undo it, and only until another person moves.</li><li>Inside an action, Undo action cancels the whole action.</li></ul>
+  <h3>Each on their own phone</h3><ul><li>Each person opens Furrow on their own phone, with the same table code.</li><li>One phone hosts and picks the number of people and computers. The others tap Join. Every phone updates live, and only the player whose turn it is can act.</li></ul>
+  <h3>Rounds</h3><ul><li>Build the best farm in 14 rounds. Players take turns placing one family member on an action space. A space holds one person per round.</li><li>One new action opens each round, in six stages. Piles on accumulating spaces grow until someone takes them.</li><li>Seating order around the table and the first player are both drawn at random. After that, Meeting Place makes you first next round. The first player starts with 2 food, everyone else with 3.</li></ul>
+  <h3>Cards</h3><ul><li>Each player starts with a private hand of occupations and minor improvements. Tap Hand to see yours.</li><li>Lessons plays 1 occupation. Your first is free, then each costs 1 food.</li><li>Minor improvements cost the resources shown. Play one with Meeting Place, Major Improvement, House Redevelopment or Family Growth.</li></ul>
+  <h3>Harvest</h3><p>After rounds 4, 7, 9, 11, 13 and 14:</p><ul><li>Each sown field gives 1 crop.</li><li>Feed 2 food per person, 1 for a baby born that round. Each missing food is a begging card (−3).</li><li>Each kind of animal with 2 or more gets 1 baby if there's room.</li></ul>
+  <h3>Building</h3><ul><li>Room: 5 of your house material + 2 reed, touching the house. You start with 2 wood rooms.</li><li>Family Growth needs a spare room, until Urgent Growth appears.</li><li>Renovate wood → clay → stone: 1 material per room + 1 reed.</li><li>Fields must touch other fields. Sow 1 grain to get 3, 1 vegetable to get 2.</li><li>Fences go on the gaps between spaces, 1 wood per piece, 15 pieces max. Tap gaps one by one, or tap a space to fence around it. Every new piece must help close off a complete pasture, and all your pastures must touch.</li><li>A pasture can span several spaces. A fence piece across an existing pasture splits it in two.</li><li>Stables cost 2 wood, max 4.</li><li>Building a Clay Oven, Stone Oven or Bake Stone lets you bake right away.</li></ul>
+  <h3>Animals</h3><ul><li>A pasture holds 2 animals per space, all of one kind. Each stable inside a pasture doubles what it holds. A stable on open meadow holds 1. Your house holds 1 pet. Some cards add pens.</li><li>Animals are arranged for you. If they don't fit, you choose which to keep. With a Fireplace or Hearth the extras are cooked; otherwise they run away.</li></ul>
+  <h3>Scoring</h3><ul><li>Fields, pastures, grain, vegetables, sheep, boar, cattle: −1 for none, up to +4.</li><li>−1 per unused farm space, +1 per stable inside a pasture.</li><li>Clay rooms +1, stone rooms +2, each person +3, improvement and card points, craft bonuses.</li></ul>`;
+}
+function sheetHTML(){
+  if(!ui.sheet&&!ui.animals)return '';
+  let inner='';
+  if(ui.animals){return `<div class="scrim"><div class="sheet" role="dialog"><div class="sin">${animalHTML()}</div></div></div>`}
+  if(ui.sheet==='rules')inner=rulesHTML();
+  if(ui.sheet==='recap')inner=recapHTML();
+  if(ui.sheet==='imps')inner=`<div class="shead"><h2>Major improvements</h2><button class="pill" data-do="close">Close</button></div><p class="sub">Built with the Major Improvement or House Redevelopment actions.</p><div>${majorsHTML(cur(),null)}</div>`;
+  if(ui.sheet==='log')inner=`<div class="shead"><h2>Game log</h2><button class="pill" data-do="close">Close</button></div><ul class="log" style="margin-top:0">${G.log.map(l=>`<li><b>R${l.r}</b> ${esc(l.m)}</li>`).join('')}</ul>`;
+  if(ui.sheet==='kitchen'){const p=actor();inner=`<div class="shead"><h2>Kitchen</h2><button class="pill" data-do="close">Close</button></div><p class="sub">${esc(p.name)} has ${p.res.food} food. Next harvest needs ${needFood(p)}.</p>${kitchenHTML(p,false)}`}
+  if(ui.sheet==='hand'){const p=me();inner=`<div class="shead"><h2>${esc(p.name)}'s hand</h2><button class="pill" data-do="close">Close</button></div>
+    <p class="sub">Keep this private. Your next occupation at Lessons costs ${occCost(p)} food.</p>
+    <h3>Occupations</h3>${handList(p,'occ',null)}<h3>Minor improvements</h3>${handList(p,'minor',null)}`}
+  if(ui.sheet==='confirmNew')inner=`<h2>Start over?</h2><p>${mode==='online'||!G?'This ends the online game on every phone.':'The current game will be lost.'}</p><div class="pbtns"><button class="btn" data-do="close">Keep playing</button><button class="btn primary" data-do="reallyNew">Start over</button></div>`;
+  return `<div class="scrim" data-do="scrim"><div class="sheet" role="dialog"><div class="sin">${inner}</div></div></div>`;
+}
+const toastHTML=()=>ui.toast?`<div class="toast" role="status">${esc(ui.toast)}</div>`:'';
+
+function render(){
+  if(quiet)return;
+  const app=document.getElementById('app');
+  const keep={};let focus=null;
+  try{app.querySelectorAll('input[id]').forEach(i=>keep[i.id]=i.value);focus=document.activeElement&&document.activeElement.id}catch(e){}
+  paint(app);notifyTurn();
+  for(const id in keep){const el=document.getElementById(id);if(el)el.value=keep[id]}
+  if(focus){const el=document.getElementById(focus);if(el&&el.tagName==='INPUT')el.focus()}
+}
+function paint(app){
+  if(!G){app.innerHTML=setupHTML()+sheetHTML()+toastHTML();return}
+  if(G.phase==='end'){app.innerHTML=headerHTML()+(canUndo()?`<div class="row"><button class="btn sm" data-do="undo">Undo ${esc(G.undo.label)}</button></div>`:'')+endHTML()+sheetHTML()+toastHTML();return}
+  if(ui.sel&&(!mine()||G.phase!=='work'||!canTake(ui.sel,G.turn)))ui.sel=null;
+  if(ui.sheet==='recap'&&!mine())ui.sheet=null;
+  if(prefRecap&&!ui.sheet&&!ui.animals&&!ui.act&&mine()&&recapEntries().length)ui.sheet='recap';
+  const vp=ui.view==='board'?me():G.players[+ui.view.slice(1)];
+  let h=headerHTML()+(ui.act?`<div class="turn" style="--pc:${pc(G.turn)}"><b>${esc(cur().name)}</b><span>${SPACES[ui.act.id].name}</span></div>`:statusHTML())+resHTML(vp)+tabsHTML();
+  h+=ui.view==='board'?(G.phase==='feed'?feedHTML():boardHTML()):farmHTML(+ui.view.slice(1));
+  const conf=confirmHTML();
+  if(ui.act)h+=panelHTML();else h+=conf;
+  app.innerHTML=`<div class="${ui.act?'with-panel':conf?'with-confirm':''}">${h}${sheetHTML()}${toastHTML()}</div>`;
+}
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-do]');if(!b||b.disabled)return;const d=b.dataset;
+  if(ui.busy&&!['view','rules','close','scrim','log','imps'].includes(d.do))return;
+  if(d.do==='scrim'&&e.target!==b)return;
+  switch(d.do){
+    case 'start':{const S=ui.setup;const specs=[];
+      for(let i=0;i<S.lp;i++)specs.push({name:(document.getElementById('n'+i)?.value||'').trim()||(S.lp===1?'You':`Player ${i+1}`)});
+      BOTNAMES.slice(0,S.lb).forEach(n=>specs.push({name:n,bot:true}));
+      mode='local';newGame(shuffle(specs));save();ui.view='board';ui.sheet=null;render();break}
+    case 'setup':{const S=ui.setup;S[d.k]=+d.v;
+      if(S.lp+S.lb>MAXP)S.lb=MAXP-S.lp;if(S.lp+S.lb<2)S.lb=2-S.lp;if(S.op+S.ob>MAXP)S.ob=MAXP-S.op;render();break}
+    case 'continueLocal':mode='local';G=migrate(loadSave());ui.view='board';runBots();render();break;
+    case 'host':hostGame();break;
+    case 'join':joinGame();break;
+    case 'cancelHost':endOnline();break;
+    case 'watch':net.watch=true;applyDoc(net.doc);render();break;
+    case 'leave':net.watch=false;mode='local';G=null;net.rev=0;net.gid=null;render();break;
+    case 'home':if(mode==='local'){save();G=null;ui.sheet=null;ui.act=null;ui.sel=null;render()}break;
+    case 'view':ui.view=d.v;render();break;
+    case 'pick':pick(d.id);break;
+    case 'confirm':if(ui.sel)take(ui.sel);break;
+    case 'unsel':ui.sel=null;render();break;
+    case 'undo':undo();break;
+    case 'toggleConfirm':prefConfirm=!prefConfirm;try{localStorage.setItem('furrow-confirm',prefConfirm?'on':'off')}catch(e){}ui.sel=null;render();break;
+    case 'tool':ui.act.tool=d.t;render();break;
+    case 'crop':ui.act.crop=d.c;render();break;
+    case 'cell':tapCell(+d.i);break;
+    case 'edge':tapEdge(d.e);break;
+    case 'akeep':if(ui.animals){const p=G.players[ui.animals.pi],j=+d.t;ui.animals.keep[j]=Math.max(0,Math.min(p.animals[A[j]],ui.animals.keep[j]+(+d.d)));render()}break;
+    case 'animalsOk':resolveAnimals();break;
+    case 'clearFences':if(ui.act){ui.act.pending=[];render()}break;
+    case 'bake':bake();break;
+    case 'buy':buyMajor(d.id,!!d.swap);break;
+    case 'play':playCard(d.id);break;
+    case 'done':finishAct();break;
+    case 'cancel':cancelAct();break;
+    case 'cook':cook(d.k);break;
+    case 'craft':craft(d.k);break;
+    case 'feed':feed();break;
+    case 'kitchen':case 'rules':case 'imps':case 'hand':case 'log':ui.sheet=d.do;render();break;
+    case 'recapOk':seen[actorIdx()]=G.seq;ui.sheet=null;render();break;
+    case 'close':case 'scrim':if(ui.sheet==='recap')seen[actorIdx()]=G.seq;ui.sheet=null;render();break;
+    case 'toggleRecap':prefRecap=!prefRecap;try{localStorage.setItem('furrow-recap',prefRecap?'on':'off')}catch(e){}render();break;
+    case 'newgame':ui.sheet='confirmNew';render();break;
+    case 'reallyNew':if(mode==='online'||!G)endOnline();else clearSave();ui.act=null;ui.sel=null;ui.sheet=null;G=null;mode='local';net.watch=false;net.rev=0;net.gid=null;render();break;
+  }
+});
+
+function start(data){G=data&&data.G?migrate(data.G):null;mode='local';ui.view='board';render();initNet()}
+if(window.claude?.hot?.snapshot)window.claude.hot.snapshot(()=>mode==='local'&&G?{G:ui.act?JSON.parse(ui.act.full):G}:{});
+window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
+</script>
+<script>
+(function(){
+  /* Parlor: a small way home when a game was opened from the installed Parlor app */
+  var standalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone;
+  var from=false;try{from=sessionStorage.getItem('fg_from')==='1'}catch(e){}
+  if(standalone&&from){
+    var b=document.createElement('a');b.href='../';b.setAttribute('aria-label','Back to Parlor');
+    b.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>';
+    b.style.cssText='position:fixed;z-index:2147483000;left:6px;top:50%;width:30px;height:44px;margin-top:-22px;border-radius:0 12px 12px 0;display:flex;align-items:center;justify-content:center;background:rgba(30,22,15,.55);color:#fff;text-decoration:none;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:.75;left:0';
+    document.body.appendChild(b);
+  }
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('../sw.js',{scope:'../'}).catch(function(){});
+})();
+</script></body></html>

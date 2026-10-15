@@ -1,0 +1,2400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="../icons/strand-180.png"><link rel="icon" type="image/png" href="../icons/strand-192.png"><meta name="apple-mobile-web-app-title" content="Strand"><meta name="mobile-web-app-capable" content="yes"><script src="../config.js"></script><script src="../shim.js" data-game="strand"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f3a44">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="Strand: settle a new island, grow your family and feed them through ten moons.">
+<title>Strand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap">
+<style>
+/* Strand — a sea-swept island. Layout: one phone column. Fixed top bar + player strip, a single main view (Island, Actions, Market, Family), a dock for the current prompt, and a bottom tab bar. */
+:root{
+  --bg:#efe6d4; --surface:#f8f2e6; --raised:#fffcf5; --ink:#132636; --muted:#5d6a72; --line:#d6c9ae; --line2:#e6dcc8;
+  --accent:#17696f; --accent-ink:#ffffff; --accent-soft:#d4ebe8; --hot:#d24d32; --hot-soft:#f8ddd4; --gold:#c88a12;
+  --sea:#9cc7cc; --sea2:#7fb4bb; --foam:#e9f4f3; --tok:#fbf5e6; --tok-ink:#2a2a2a;
+  --t-forest:#3d7a4c; --t-clay:#c4683f; --t-crag:#8c939b; --t-field:#e2b947; --t-meadow:#a3c765; --t-shoal:#5cb9b2; --t-ash:#8a7a69;
+  --p0:#d4412f; --p1:#2c5fd1; --p2:#f4f1e8; --p3:#8a44c9; --p4:#ee8a1e;
+  --pk0:#7a1a10; --pk1:#0f2c6b; --pk2:#3b3a36; --pk3:#3e135f; --pk4:#7a3e00;
+  --shadow:0 1px 2px rgba(19,38,54,.12),0 4px 14px rgba(19,38,54,.08);
+  --display:'Bricolage Grotesque',ui-rounded,system-ui,sans-serif;
+  --body:'Atkinson Hyperlegible',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0a1620; --surface:#10212e; --raised:#162b3a; --ink:#ece4d2; --muted:#93a4ad; --line:#24404f; --line2:#1b3443;
+  --accent:#55c2bc; --accent-ink:#06191c; --accent-soft:#163c40; --hot:#ff8463; --hot-soft:#3d2219; --gold:#f0b43a;
+  --sea:#153a4a; --sea2:#11303e; --foam:#1f4d5e; --tok:#efe7d4; --tok-ink:#1b1b1b;
+  --t-forest:#2f6a3e; --t-clay:#a95634; --t-crag:#6f7780; --t-field:#c49d32; --t-meadow:#7fa24c; --t-shoal:#3b9690; --t-ash:#6a5c4e;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0a1620; --surface:#10212e; --raised:#162b3a; --ink:#ece4d2; --muted:#93a4ad; --line:#24404f; --line2:#1b3443;
+  --accent:#55c2bc; --accent-ink:#06191c; --accent-soft:#163c40; --hot:#ff8463; --hot-soft:#3d2219; --gold:#f0b43a;
+  --sea:#153a4a; --sea2:#11303e; --foam:#1f4d5e; --tok:#efe7d4; --tok-ink:#1b1b1b;
+  --t-forest:#2f6a3e; --t-clay:#a95634; --t-crag:#6f7780; --t-field:#c49d32; --t-meadow:#7fa24c; --t-shoal:#3b9690; --t-ash:#6a5c4e;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3);
+  color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);height:100%}
+body{color:var(--ink);font:15px/1.4 var(--body);-webkit-tap-highlight-color:transparent;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{font-family:var(--display);margin:0;font-weight:700;letter-spacing:-.01em}
+.ic{width:18px;height:18px;flex:none;display:inline-block;vertical-align:middle}
+.sub{color:var(--muted);font-size:13px;margin:0}
+.hide{display:none!important}
+#app{max-width:480px;margin:0 auto;min-height:100%;position:relative}
+
+/* ---------- buttons ---------- */
+.btn{min-height:44px;padding:0 16px;border-radius:12px;background:var(--raised);border:1px solid var(--line);font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .08s,background .15s}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.hot{background:var(--hot);color:#fff;border-color:transparent}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:36px;padding:0 12px;font-size:14px;border-radius:10px}
+.btn.wide{width:100%}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.row{display:flex;gap:8px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.spacer{flex:1}
+
+/* ---------- home ---------- */
+.home{min-height:100dvh;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 18px) 16px calc(env(safe-area-inset-bottom,0px) + 24px)}
+.hero{position:relative;text-align:center;padding:8px 0 6px}
+.hero svg{width:min(300px,78vw);height:auto;display:block;margin:0 auto}
+.wordmark{font-family:var(--display);font-weight:800;font-size:56px;letter-spacing:.02em;line-height:.9;margin-top:6px}
+.tagline{color:var(--muted);margin:8px auto 0;max-width:300px;font-size:14px}
+.menu{display:flex;flex-direction:column;gap:10px;margin-top:22px}
+.menu .btn{min-height:52px;font-size:16px;justify-content:flex-start;padding:0 18px}
+.menu .btn .ic{width:22px;height:22px}
+.menu .btn small{margin-left:auto;font-weight:400;color:inherit;opacity:.75;font-size:13px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:12px}
+.box h2{font-size:18px;margin-bottom:6px}
+.field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);margin-top:8px}
+.field input{font:inherit;color:var(--ink);background:var(--raised);border:1px solid var(--line);border-radius:10px;min-height:44px;padding:0 12px}
+.seg{display:flex;background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;min-height:38px;border-radius:9px;font-weight:700;color:var(--muted)}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.seg button[disabled]{opacity:.35}
+.pick{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.pick>span{font-size:13px;color:var(--muted)}
+.toggle{display:flex;align-items:center;gap:12px;min-height:48px;padding:6px 0;border-top:1px solid var(--line2);width:100%;text-align:left}
+.toggle:first-of-type{border-top:0}
+.toggle b{display:block;font-size:15px}
+.toggle .sub{font-size:12.5px}
+.sw{margin-left:auto;width:46px;height:28px;border-radius:14px;background:var(--line);position:relative;flex:none;transition:background .15s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s}
+.sw.on{background:var(--accent)}.sw.on::after{left:21px}
+.back{display:inline-flex;align-items:center;gap:4px;min-height:44px;color:var(--accent);font-weight:700}
+
+/* ---------- game frame ---------- */
+.game{height:100dvh;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto auto;overflow:hidden}
+.topbar{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 6px) 12px 6px;background:var(--bg)}
+.topbar .mark{font-family:var(--display);font-weight:800;font-size:19px;letter-spacing:.02em}
+.moons{display:flex;gap:3px;align-items:center;margin-left:auto}
+.moon{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--muted);position:relative;opacity:.55}
+.moon.past{background:var(--muted);opacity:.35}
+.moon.now{border-color:var(--accent);background:var(--accent);opacity:1;box-shadow:0 0 0 3px var(--accent-soft)}
+.moon.feast::after{content:"";position:absolute;left:50%;bottom:-6px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--hot)}
+.iconbtn{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none}
+.iconbtn:active{background:var(--line2)}
+.iconbtn .ic{width:22px;height:22px}
+.strip{display:flex;gap:6px;padding:4px 12px 8px;overflow-x:auto;scrollbar-width:none}
+.strip::-webkit-scrollbar{display:none}
+.chip{flex:1 1 0;min-width:62px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:5px 7px 5px 9px;position:relative;text-align:left;min-height:50px;transition:box-shadow .2s,border-color .2s}
+.chip::before{content:"";position:absolute;left:0;top:7px;bottom:7px;width:4px;border-radius:0 3px 3px 0;background:var(--pc)}
+.chip .nm{font-weight:700;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;line-height:1.2}
+.chip .st{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);line-height:1.2;margin-top:2px}
+.chip .st b{color:var(--ink);font-size:14px;font-family:var(--display)}
+.chip .st .star{width:12px;height:12px;color:var(--gold);margin-left:-3px}
+.chip .st .fd{display:inline-flex;align-items:center;gap:1px;margin-left:auto}
+.chip .st .fd .ic{width:15px;height:15px}
+.chip .kins{display:flex;gap:2px;margin-top:3px}
+.chip .kins i{width:6px;height:9px;border-radius:3px 3px 1px 1px;background:var(--pc);border:1px solid var(--pk)}
+.chip .kins i.used{background:transparent;opacity:.5}
+.chip .kins i.baby{height:6px;margin-top:3px}
+.chip.act{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.chip.act .think{position:absolute;right:6px;top:6px;display:flex;gap:2px}
+.think i{width:4px;height:4px;border-radius:50%;background:var(--accent);animation:blink 1s infinite}
+.think i:nth-child(2){animation-delay:.15s}.think i:nth-child(3){animation-delay:.3s}
+@keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
+.chip.you .nm::after{content:" ·you";color:var(--muted);font-weight:400}
+
+.main{position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.scroll{overflow-y:auto;overscroll-behavior:contain;flex:1;min-height:0;padding:0 12px 12px;-webkit-overflow-scrolling:touch}
+
+/* ---------- island ---------- */
+.islandwrap{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;padding:0 6px}
+.island{width:100%;max-height:100%;touch-action:manipulation;display:block}
+.island .sea{fill:var(--sea)}
+.island .hex{stroke:var(--surface);stroke-width:2.5;stroke-linejoin:round}
+.island .hx-forest{fill:var(--t-forest)}.island .hx-clay{fill:var(--t-clay)}.island .hx-crag{fill:var(--t-crag)}
+.island .hx-field{fill:var(--t-field)}.island .hx-meadow{fill:var(--t-meadow)}.island .hx-shoal{fill:var(--t-shoal)}.island .hx-ash{fill:var(--t-ash)}
+.island .glyph{fill:#fff;opacity:.38}
+.island .tok{fill:var(--tok);stroke:rgba(0,0,0,.18);stroke-width:1}
+.island .num{font:700 15px var(--display);fill:var(--tok-ink);text-anchor:middle;dominant-baseline:central}
+.island .num.hot{fill:#c62f1b}
+.island .pips{fill:var(--tok-ink)}.island .pips.hot{fill:#c62f1b}
+.island .lit .hex{stroke:var(--gold);stroke-width:4}
+.island .lit .tok{fill:#ffe9a8}
+.island .dim{opacity:.55}
+.island .road{stroke-linecap:round;stroke-width:7}
+.island .roadk{stroke:rgba(0,0,0,.55);stroke-linecap:round;stroke-width:10}
+.island .bld{stroke-width:2;stroke-linejoin:round}
+.island .port line{stroke:var(--muted);stroke-width:2;stroke-dasharray:3 3}
+.island .port circle{fill:var(--raised);stroke:var(--line);stroke-width:1}
+.island .port text{font:700 9px var(--body);fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.island .mk circle{fill:var(--ink)}
+.island .mk text{font:700 9px var(--body);fill:var(--bg);text-anchor:middle;dominant-baseline:central}
+.island .mk.mine circle{fill:var(--gold)}
+.island .mk.mine text{fill:#2a1c00}
+.island .tgt{fill:var(--accent);opacity:.9;animation:pulse 1.1s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.island .tgtl{stroke:var(--accent);stroke-width:7;stroke-linecap:round;opacity:.75;stroke-dasharray:2 8;animation:dash 1s linear infinite}
+.island .tgth{fill:var(--accent);opacity:.25;animation:pulse 1.1s ease-in-out infinite}
+.island .ghost{opacity:.8}
+.island .new{animation:pop .35s cubic-bezier(.3,1.6,.6,1) both;transform-box:fill-box;transform-origin:center}
+.island .newroad{stroke-dasharray:60;animation:draw .35s ease-out both}
+.island .raider{animation:pop .35s both;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{0%,100%{transform:scale(.8);opacity:.55}50%{transform:scale(1.1);opacity:1}}
+@keyframes dash{to{stroke-dashoffset:-20}}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes draw{from{stroke-dashoffset:60}to{stroke-dashoffset:0}}
+.tides{display:flex;align-items:center;gap:6px;padding:2px 12px 6px;font-size:12.5px;color:var(--muted);min-height:34px;width:100%}
+.tcard{width:26px;height:32px;border-radius:6px;background:var(--raised);border:1px solid var(--line);display:grid;place-items:center;font:700 14px var(--display);color:var(--ink)}
+.tcard.fl{animation:flip .4s both}
+.tcard.seven{background:var(--hot);color:#fff;border-color:transparent}
+.tcard.fl:nth-child(3){animation-delay:.08s}.tcard.fl:nth-child(4){animation-delay:.16s}
+@keyframes flip{from{transform:rotateY(90deg)}to{transform:rotateY(0)}}
+.tides .gain{margin-left:auto;display:flex;gap:4px;align-items:center;color:var(--ink);font-weight:700}
+.legend{display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 12px 2px;font-size:11.5px;color:var(--muted);justify-content:center}
+.legend b{color:var(--ink)}
+.legend .mine{color:var(--gold);font-weight:700}
+
+/* ---------- action board ---------- */
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding-top:2px}
+.space{position:relative;background:var(--raised);border:1px solid var(--line);border-radius:12px;min-height:72px;padding:7px 7px 6px;text-align:left;display:flex;flex-direction:column;gap:3px;transition:transform .08s,border-color .15s,box-shadow .15s;overflow:hidden}
+.space:active{transform:scale(.97)}
+.space .sn{font:700 13px/1.15 var(--display);letter-spacing:-.01em}
+.space .sx{font-size:11px;color:var(--muted);line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.space .pile{display:flex;flex-wrap:wrap;gap:2px 5px;margin-top:auto;font-weight:700;font-size:13px;align-items:center}
+.space .pile span{display:inline-flex;align-items:center;gap:1px}
+.space .pile .ic{width:15px;height:15px}
+.space.new{border-color:var(--gold);box-shadow:0 0 0 2px rgba(200,138,18,.25)}
+.space.new .sn::after{content:"new";font:700 9px var(--body);text-transform:uppercase;letter-spacing:.06em;color:var(--gold);margin-left:4px;vertical-align:2px}
+.space.taken{background:var(--surface)}
+.space.taken .sx,.space.taken .pile{opacity:.45}
+.space .occ{position:absolute;right:5px;top:5px;width:16px;height:21px}
+.space.taken .sn{padding-right:16px}
+.space.taken .sx{padding-right:4px}
+.space.hl .occ{animation:pop .3s cubic-bezier(.3,1.6,.6,1) both}
+.space.no{opacity:.5}
+.space.sel{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.space.mine-ok{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.space.hl{animation:hl 1.6s ease-out}
+@keyframes hl{0%{box-shadow:0 0 0 4px var(--gold)}100%{box-shadow:0 0 0 0 transparent}}
+.sect{font:700 11px var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:12px 2px 6px;display:flex;align-items:center;gap:6px}
+.sect:first-child{margin-top:4px}
+.upnext{font-size:12px;color:var(--muted);margin:10px 2px 0}
+
+/* ---------- market ---------- */
+.crafts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.craft{background:var(--raised);border:1px solid var(--line);border-radius:14px;padding:9px 10px;text-align:left;display:flex;flex-direction:column;gap:4px;min-height:118px;position:relative;transition:transform .08s,border-color .15s}
+.craft:active{transform:scale(.98)}
+.craft .tier{font:700 10px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.craft .cn{font:700 15px/1.15 var(--display)}
+.craft .ct{font-size:12px;color:var(--muted);line-height:1.25}
+.craft .cost{display:flex;flex-wrap:wrap;gap:4px;margin-top:auto;font-weight:700;font-size:13px}
+.craft .cost span{display:inline-flex;align-items:center;gap:1px}
+.craft .cost .ic{width:15px;height:15px}
+.craft .pts{position:absolute;right:8px;top:8px;min-width:24px;height:24px;border-radius:12px;background:var(--gold);color:#2a1c00;font:800 13px var(--display);display:grid;place-items:center;padding:0 6px}
+.craft.can{border-color:var(--accent)}
+.craft.sel{box-shadow:0 0 0 3px var(--accent-soft);border-color:var(--accent)}
+.craft.cant{opacity:.55}
+.craft.t2{background:linear-gradient(180deg,var(--raised),color-mix(in srgb,var(--accent-soft) 40%,var(--raised)))}
+.craft.t3{background:linear-gradient(180deg,var(--raised),color-mix(in srgb,var(--gold) 14%,var(--raised)))}
+.offer{display:flex;align-items:center;gap:8px;background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:6px;min-height:52px}
+.offer .who{width:10px;height:10px;border-radius:50%;background:var(--pc);flex:none;border:1px solid var(--pk)}
+.offer .what{flex:1;font-size:13px;display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.offer.bad{opacity:.5}
+.res{display:inline-flex;align-items:center;gap:1px;font-weight:700}
+.res .ic{width:16px;height:16px}
+
+/* ---------- family / me ---------- */
+.goods{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:4px}
+.good{background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:6px 2px 4px;text-align:center}
+.good .ic{width:24px;height:24px;display:block;margin:0 auto 2px}
+.good b{font:800 18px var(--display);display:block;line-height:1}
+.good small{font-size:10px;color:var(--muted)}
+.good.flash{animation:hl 1.2s}
+.statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px}
+.stat{background:var(--surface);border:1px solid var(--line2);border-radius:10px;padding:6px 4px;text-align:center}
+.stat b{display:block;font:800 17px var(--display)}
+.stat small{font-size:10.5px;color:var(--muted)}
+.chart{background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:9px 10px;margin-bottom:6px;display:flex;gap:10px;align-items:flex-start}
+.chart .cpts{font:800 18px var(--display);min-width:28px;text-align:center;color:var(--gold)}
+.chart .cbody{flex:1}
+.chart b{font-family:var(--display)}
+.chart .sub{font-size:12px}
+.chart.done{border-color:var(--accent)}
+.chart.done .cpts{color:var(--accent)}
+.chart.sel{box-shadow:0 0 0 3px var(--accent-soft);border-color:var(--accent)}
+.tag{display:inline-block;font:700 10px var(--body);text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:6px;background:var(--line2);color:var(--muted);vertical-align:2px}
+.tag.ok{background:var(--accent-soft);color:var(--accent)}
+.tag.warn{background:var(--hot-soft);color:var(--hot)}
+.mycrafts{display:flex;flex-wrap:wrap;gap:6px}
+.mycrafts .mc{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:12px;max-width:100%}
+.mycrafts .mc b{font-family:var(--display);font-size:13.5px}
+.feastwarn{display:flex;gap:8px;align-items:center;background:var(--hot-soft);color:var(--hot);border-radius:12px;padding:8px 10px;font-weight:700;font-size:13.5px;margin-top:8px}
+.feastok{display:flex;gap:8px;align-items:center;background:var(--accent-soft);color:var(--accent);border-radius:12px;padding:8px 10px;font-weight:700;font-size:13.5px;margin-top:8px}
+
+/* ---------- dock + tabs ---------- */
+.dock{background:var(--surface);border-top:1px solid var(--line);padding:8px 12px;min-height:64px;display:flex;flex-direction:column;gap:6px;position:relative}
+.dock .msg{display:flex;align-items:center;gap:8px;font-size:14px;min-height:22px}
+.dock .msg b{font-family:var(--display);font-size:15.5px}
+.dock .msg .sub{font-size:12.5px}
+.dock .acts{display:flex;gap:8px}
+.dock .acts .btn{flex:1}
+.dock.mine{background:color-mix(in srgb,var(--accent-soft) 55%,var(--surface))}
+.dock .tip{font-size:12px;color:var(--muted);border-left:3px solid var(--gold);padding-left:8px;line-height:1.3}
+.dock .dot{width:10px;height:10px;border-radius:50%;background:var(--pc);border:1px solid var(--pk);flex:none}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tab{min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;font-weight:700;color:var(--muted);position:relative}
+.tab .ic{width:22px;height:22px}
+.tab.on{color:var(--accent)}
+.tab .badge{position:absolute;top:6px;left:calc(50% + 8px);min-width:16px;height:16px;border-radius:8px;background:var(--hot);color:#fff;font-size:10px;display:grid;place-items:center;padding:0 4px}
+.recap{margin:0 12px 6px;background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:7px 10px;font-size:12.5px;position:relative}
+.recap ul{margin:2px 0 0;padding:0;list-style:none}
+.recap li{display:flex;gap:6px;align-items:baseline;line-height:1.3;font-size:12px}
+.recap li span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.recap li i{width:8px;height:8px;border-radius:50%;background:var(--pc);flex:none;transform:translateY(-1px)}
+.recap .x{position:absolute;right:2px;top:0;width:40px;height:36px;display:grid;place-items:center;color:var(--muted)}
+.recap h4{margin:0;font:700 11px var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+
+/* ---------- sheets ---------- */
+.scrim{position:fixed;inset:0;background:rgba(6,16,24,.45);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.scrim.fr{animation:fade .18s both}
+@keyframes fade{from{background:rgba(6,16,24,0)}to{background:rgba(6,16,24,.45)}}
+.sheet{background:var(--bg);width:100%;max-width:480px;max-height:88dvh;border-radius:20px 20px 0 0;display:flex;flex-direction:column;box-shadow:0 -8px 30px rgba(0,0,0,.25)}
+  .sheet.fr{animation:up .22s cubic-bezier(.2,.9,.3,1) both}
+@keyframes up{from{transform:translateY(40px)}to{transform:none}}
+.sheet .grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:8px auto 2px}
+.sheet .sin{overflow-y:auto;padding:6px 16px 12px;flex:1;min-height:0}
+.sheet .sfoot{padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 12px);border-top:1px solid var(--line);display:flex;gap:8px;background:var(--surface)}
+.sheet .sfoot .btn{flex:1}
+.sheet h2{font-size:22px;margin:4px 0 6px}
+.sheet h3{font-size:16px;margin:14px 0 6px}
+.sheet p{margin:6px 0}
+.picker{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0}
+.picker button{min-height:64px;border-radius:12px;background:var(--raised);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;font-weight:700;position:relative}
+.picker button .ic{width:26px;height:26px}
+.picker button.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.picker button .n{position:absolute;top:3px;right:5px;font:800 13px var(--display);color:var(--accent)}
+.picker.six{grid-template-columns:repeat(6,1fr)}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{width:40px;height:40px;border-radius:10px;background:var(--raised);border:1px solid var(--line);font-size:20px;font-weight:700}
+.stepper b{min-width:22px;text-align:center;font:800 18px var(--display)}
+.tline{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line2);min-height:52px}
+.tline:first-child{border-top:0}
+.tline .lbl{flex:1;display:flex;align-items:center;gap:6px;font-size:14px}
+.tline .lbl small{color:var(--muted)}
+.big{font:800 28px var(--display)}
+.rules h3{display:flex;align-items:center;gap:8px}
+.rules p,.rules li{font-size:14.5px;line-height:1.45}
+.rules ul{padding-left:18px;margin:6px 0}
+.rules .eg{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:13.5px;margin:8px 0}
+.log li{font-size:13px;padding:5px 0;border-top:1px solid var(--line2);list-style:none;display:flex;gap:6px;align-items:baseline}
+.log{padding:0;margin:0}
+.log li i{width:8px;height:8px;border-radius:50%;background:var(--pc);flex:none}
+.log li.m{font-weight:700;color:var(--accent);border-top:2px solid var(--line)}
+
+/* ---------- end ---------- */
+.endwrap{padding:calc(env(safe-area-inset-top,0px) + 14px) 14px calc(env(safe-area-inset-bottom,0px) + 20px);min-height:100dvh}
+.winner{text-align:center;padding:12px 0 6px}
+.winner .crown{width:64px;height:64px;margin:0 auto}
+.winner h1{font-size:34px;margin-top:4px}
+.scoretbl{width:100%;border-collapse:collapse;margin-top:12px;font-size:13.5px;background:var(--surface);border-radius:14px;overflow:hidden}
+.scoretbl th,.scoretbl td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--line2)}
+.scoretbl th:first-child,.scoretbl td:first-child{text-align:left;padding-left:12px}
+.scoretbl thead th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+.scoretbl tr.tot td{font:800 17px var(--display);border-bottom:0}
+.scoretbl .pcol{display:inline-flex;align-items:center;gap:5px;font-weight:700}
+.scoretbl .pcol i{width:10px;height:10px;border-radius:50%;background:var(--pc);border:1px solid var(--pk)}
+.scoretbl td.win{background:color-mix(in srgb,var(--gold) 18%,transparent)}
+
+/* ---------- toast + fx ---------- */
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 150px);transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:60;max-width:min(92vw,440px);text-align:center;box-shadow:var(--shadow)}
+.toast.fr{animation:toast .25s both}
+@keyframes toast{from{transform:translate(-50%,10px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:50}
+.float{position:absolute;font:800 13px var(--display);color:#fff;background:rgba(10,30,40,.78);padding:2px 6px;border-radius:8px;display:flex;align-items:center;gap:2px;animation:rise 1.1s ease-out forwards;white-space:nowrap}
+.float .ic{width:14px;height:14px}
+@keyframes rise{0%{transform:translateY(6px);opacity:0}20%{opacity:1}100%{transform:translateY(-34px);opacity:0}}
+.cover{position:fixed;inset:0;z-index:70;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center}
+@media (prefers-reduced-motion: reduce){*{animation-duration:.01ms!important;transition:none!important}}
+@media (min-width:700px){#app{box-shadow:0 0 0 1px var(--line)}.game{height:100dvh}}
+
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <symbol id="i-wood" viewBox="0 0 24 24"><path d="M12 2 5.5 11H9l-4.5 6.5H11V22h2v-4.5h6.5L15 11h3.5z" fill="#2f7d45" stroke="#173d22" stroke-width="1" stroke-linejoin="round"/></symbol>
+ <symbol id="i-clay" viewBox="0 0 24 24"><g fill="#c9643a" stroke="#6b2a12" stroke-width="1"><rect x="2.5" y="5" width="9" height="6" rx="1"/><rect x="12.5" y="5" width="9" height="6" rx="1"/><rect x="2.5" y="13" width="5" height="6" rx="1"/><rect x="8.5" y="13" width="13" height="6" rx="1"/></g></symbol>
+ <symbol id="i-stone" viewBox="0 0 24 24"><path d="M3 18.5 6 10l5-4.5 6 2.5 4 10.5z" fill="#9aa1a9" stroke="#3d4248" stroke-width="1.2" stroke-linejoin="round"/><path d="M11 5.5 12.5 12 21 18.5M6 10l6.5 2" fill="none" stroke="#3d4248" stroke-width="1"/></symbol>
+ <symbol id="i-grain" viewBox="0 0 24 24"><g stroke="#7a5a08" stroke-width="1" fill="#e8b93a"><path d="M12 22V8" fill="none" stroke-width="1.6"/><ellipse cx="12" cy="5" rx="2" ry="3"/><ellipse cx="9" cy="9.5" rx="1.8" ry="3" transform="rotate(-30 9 9.5)"/><ellipse cx="15" cy="9.5" rx="1.8" ry="3" transform="rotate(30 15 9.5)"/><ellipse cx="9" cy="14.5" rx="1.8" ry="3" transform="rotate(-30 9 14.5)"/><ellipse cx="15" cy="14.5" rx="1.8" ry="3" transform="rotate(30 15 14.5)"/></g></symbol>
+ <symbol id="i-wool" viewBox="0 0 24 24"><g stroke="#55605a" stroke-width="1"><path d="M7 18v3M16 18v3" fill="none" stroke-width="1.6"/><path d="M5 15a3 3 0 0 1 1-5.5 3.5 3.5 0 0 1 6-2 3.5 3.5 0 0 1 6 2A3 3 0 0 1 19 15a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z" fill="#f4f1e6"/><ellipse cx="19.5" cy="10.5" rx="2.4" ry="2" fill="#4a4a48"/></g></symbol>
+ <symbol id="i-food" viewBox="0 0 24 24"><path d="M2.5 12c3-5 10-6.5 14-1.5l4.5-3.5v10l-4.5-3.5c-4 5-11 3.5-14-1.5z" fill="#5aa9c9" stroke="#1d4b5e" stroke-width="1.1" stroke-linejoin="round"/><circle cx="7" cy="11" r="1.1" fill="#1d4b5e"/></symbol>
+ <symbol id="i-any" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5v9M7.5 12h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+ <symbol id="i-kin" viewBox="0 0 24 24"><circle cx="12" cy="6.5" r="3.5" fill="currentColor"/><path d="M5 21c0-5 3-8 7-8s7 3 7 8z" fill="currentColor"/></symbol>
+ <symbol id="i-house" viewBox="0 0 24 24"><path d="M4 20V10l8-7 8 7v10h-5v-6H9v6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+ <symbol id="i-hex" viewBox="0 0 24 24"><path d="M12 2.5 20.5 7.3v9.4L12 21.5 3.5 16.7V7.3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></symbol>
+ <symbol id="i-craft" viewBox="0 0 24 24"><path d="M14.5 3.5l6 6-3 3-6-6zM11.5 6.5 4 14v6h6l7.5-7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+ <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+ <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+ <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 9h10a6 6 0 0 1 0 12h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+ <symbol id="i-trade" viewBox="0 0 24 24"><path d="M4 8h14l-4-4M20 16H6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+ <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 21V5M19 19v2H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+ <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+ <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+ <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+ <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8z" fill="currentColor"/></symbol>
+ <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+ <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+ <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" fill="currentColor"/></symbol>
+</svg>
+<div id="app"></div>
+<script id="core">
+/* ================= Strand — rules engine (pure; every function takes the state S) ================= */
+'use strict';
+const SQ3=Math.sqrt(3);
+const RES=['wood','clay','stone','grain','wool','food'];
+const RN=['Wood','Clay','Stone','Grain','Wool','Food'];
+const TERR=[
+  {id:'forest',name:'Forest',g:0},{id:'clay',name:'Clay pit',g:1},{id:'crag',name:'Crag',g:2},
+  {id:'field',name:'Field',g:3},{id:'meadow',name:'Meadow',g:4},{id:'shoal',name:'Shoal',g:5},{id:'ash',name:'Ash dune',g:-1}];
+const ROAD=[1,1,0,0,0,0],HOUSE=[1,1,0,1,1,0],HALL=[0,0,3,2,0,0];
+const MOONS=10,FEASTS=[3,6,8,10],MAXKIN=5;
+const RULES={hardship:2,kinPts:2,lrPts:3,chPen:2,squallAt:10,nets:2,helmLast:true,food:'first1'};
+const startFood=(i,np)=>3+(RULES.food==='last1'?(i===np-1&&np>1?1:0):RULES.food==='ramp'?(i>0?1:0):RULES.food==='first1'?(i===0?1:0):RULES.food==='last2'?(i===np-1&&np>1?2:0):0);
+const pip=n=>n?6-Math.abs(7-n):0;
+const MARKS=['Gull Rock','Seal Point','Old Beacon','Whalebone','Fog Cove','Raven Stack'];
+const BOTNAMES=['Brann','Ysolde','Corra','Tamsin','Halvard','Odile'];
+
+/* ---- crafts ---- */
+const C=(name,tier,cost,pts,text,x)=>Object.assign({name,tier,cost,pts,text},x||{});
+const CRAFTS={
+  smoke:C('Smokehouse',1,[2,0,1,0,0,0],1,'At feasts, each wool you eat gives 2 food.',{wool:2}),
+  bake:C('Bakehouse',1,[0,2,1,0,0,0],1,'At feasts, each grain you eat gives 2 food.',{grain:2}),
+  netloft:C('Net loft',1,[1,0,0,0,1,0],0,'Nets and Weir give you 2 more food.',{bonus:{nets:[0,0,0,0,0,2],weir:[0,0,0,0,0,2]}}),
+  sawpit:C('Saw pit',1,[1,0,1,0,0,0],0,'Timber and Copse give you 2 more wood.',{bonus:{timber:[2,0,0,0,0,0],copse:[2,0,0,0,0,0]}}),
+  kiln:C('Kiln',1,[1,1,0,0,0,0],0,'Clay pit gives you 1 more clay and 1 stone.',{bonus:{claypit:[0,1,1,0,0,0]}}),
+  cart:C('Ox cart',1,[1,0,0,1,0,0],0,'Your roads cost 1 wood only.',{cart:1}),
+  ferry:C('Ferry',1,[2,1,0,0,0,0],1,'Trade with the supply at 3:1.',{rate:3}),
+  salt:C('Salt pans',1,[0,1,0,0,1,0],0,'Take 1 food at the start of each moon.',{income:[0,0,0,0,0,1]}),
+  lookout:C('Lookout',1,[1,0,1,0,0,0],1,'Squalls and raids never take your goods.',{safe:1}),
+  herbs:C('Herb garden',1,[0,0,0,1,1,0],1,'You need 1 less food at each feast.',{herbs:1}),
+  tools:C('Tool shed',1,[1,1,0,0,0,0],0,'Odd jobs and Market day give you 1 more good.',{tools:1}),
+  shepherd:C('Shepherd',1,[0,0,0,2,0,0],1,'At each feast, if you have 2+ wool, gain 1 wool first.',{shepherd:1}),
+  longhouse:C('Longhouse',2,[2,2,1,0,0,0],2,'One more bed for your kin.',{bed:1}),
+  mason:C('Stonemason',2,[0,0,2,1,0,0],1,'Halls cost you 1 stone less.',{hallDisc:1}),
+  granary:C('Granary',2,[1,0,0,2,0,0],1,'If the tides give you nothing in a moon, take 1 grain.',{granary:1}),
+  surveyor:C('Surveyor',2,[1,1,0,1,0,0],2,'Settle, Outpost and Road crew let you build 1 more road.',{surveyor:1}),
+  tavern:C('Tavern',2,[1,0,0,1,1,0],2,'The Helm gives you 2 more food.',{bonus:{helm:[0,0,0,0,0,2]}}),
+  mill:C('Mill',2,[1,0,2,0,0,0],2,'At feasts, each grain you eat gives 3 food.',{grain:3}),
+  tower:C('Watchtower',2,[1,0,2,0,0,0],2,'Your buildings produce even under the raider.',{tower:1}),
+  weavers:C('Weavers',2,[0,0,0,0,3,0],1,'End: +1 point per 2 wool you hold.',{end:'wool'}),
+  lighthouse:C('Lighthouse',3,[2,0,3,0,0,0],4,'Worth 4 points.'),
+  greathall:C('Great hall',3,[3,0,2,0,0,0],0,'End: +1 point per kin.',{end:'kin'}),
+  stones:C('Standing stones',3,[0,0,4,0,0,0],0,'End: +2 points per hall.',{end:'halls'}),
+  guildhouse:C('Guildhouse',3,[2,2,0,1,0,0],0,'End: +1 point per craft you own.',{end:'crafts'}),
+  chronicle:C('Chronicle',3,[0,0,0,2,2,0],0,'End: +2 points per finished charter.',{end:'charters'}),
+  warden:C('Road warden',3,[2,2,0,0,0,0],0,'End: +1 point per 3 roads.',{end:'roads'}),
+  harborhall:C('Harbor hall',3,[2,0,2,0,1,0],3,'Worth 3. Trade with the supply at 2:1.',{rate:2}),
+};
+const TIER_SLOTS=[1,1,1,2,2,3];
+
+/* ---- action spaces ---- */
+const S_=(name,short,x)=>Object.assign({name,short},x||{});
+const SPACES={
+  helm:S_('Helm','Go first next moon and steer the squall. +1 food.',{gain:[0,0,0,0,0,1]}),
+  timber:S_('Timber','Wood piles up: +2 each moon.',{acc:[2,0,0,0,0,0]}),
+  claypit:S_('Clay pit','Clay piles up: +1 each moon.',{acc:[0,1,0,0,0,0]}),
+  nets:S_('Nets','Food piles up: +2 each moon.',{acc:[0,0,0,0,0,2]}),
+  odd:S_('Odd jobs','+1 food and 1 good of your choice.',{gain:[0,0,0,0,0,1],pick:1}),
+  settle:S_('Settle','Build up to 2 roads (the first is free), then 1 house or 1 hall.',{build:{roads:2,homes:1,free:1}}),
+  bazaar:S_('Bazaar','+1 food, then trade 2 for 1 as often as you like.',{gain:[0,0,0,0,0,1],bazaar:1}),
+  workshop:S_('Workshop','Buy 1 craft from the market.',{craft:1}),
+  raid:S_('Raid','Move the raider. Steal 2 goods from a player beside it.',{raid:1}),
+  copse:S_('Copse','Wood and clay pile up: +1 each per moon.',{acc:[1,1,0,0,0,0],min:3}),
+  crew:S_('Road crew','Build up to 2 roads.',{build:{roads:2},min:3}),
+  outpost:S_('Outpost','Build up to 2 roads (the first is free), then 1 house or 1 hall.',{build:{roads:2,homes:1,free:1},min:4}),
+  barley:S_('Barley','Grain piles up: +1 each moon.',{acc:[0,0,0,1,0,0]}),
+  orchard:S_('Orchard','Wood and grain pile up: +1 each per moon.',{acc:[1,0,0,1,0,0],min:4}),
+  weir:S_('Weir','Food piles up: +1 each moon.',{acc:[0,0,0,0,0,1],min:5}),
+  guild:S_('Guild','Buy 1 craft from the market.',{craft:1,min:5}),
+  quarry:S_('Quarry','Stone piles up: +1 each moon.',{acc:[0,0,1,0,0,0],stage:1}),
+  shearing:S_('Shearing','Wool piles up: +1 each moon.',{acc:[0,0,0,0,1,0],stage:1}),
+  kinfolk:S_('Kinfolk','A new kin joins you. Needs a free bed.',{grow:1,stage:2}),
+  masons:S_('Masons','Upgrade up to 2 houses to halls, 1 stone cheaper each.',{build:{halls:2,hallDisc:1},stage:2}),
+  charters:S_('Charter house','Draw 2 charters and keep any. +1 good of your choice.',{draw:1,pick:1,stage:2}),
+  wayfarers:S_('Wayfarers','A new kin joins you, even with no free bed.',{grow:2,stage:4}),
+  shipyard:S_('Shipyard','Build up to 3 roads for 1 wood each.',{build:{roads:3,ship:1},stage:3}),
+  market:S_('Market day','Take 2 goods of your choice.',{pick:2,stage:3}),
+  works:S_('Great works','Build as many roads, houses and halls as you can pay for.',{build:{roads:99,homes:99},stage:4}),
+  feasthall:S_('Feast hall','+1 food for each of your kin.',{feast:1,stage:3}),
+};
+const BASE_SPACES=['helm','timber','claypit','barley','nets','odd','settle','bazaar','workshop','raid','copse','crew','outpost','orchard','weir','guild'];
+
+/* ---- charters ---- */
+const AMB={
+  kin5:{name:'Full table',pts:4,text:'Have 5 kin.'},
+  halls2:{name:'Stone and mortar',pts:4,text:'Have 2 halls.'},
+  build5:{name:'Many hearths',pts:4,text:'Have 5 buildings (houses + halls).'},
+  craft4:{name:'Patron',pts:4,text:'Own 4 crafts.'},
+  terr5:{name:'Five lands',pts:3,text:'Your buildings touch 5 kinds of land.'},
+  harb2:{name:'Harbor folk',pts:3,text:'Have buildings on 2 harbors.'},
+  nohard:{name:'Never hungry',pts:3,text:'Take no hardship all game.'},
+  road9:{name:'Pathfinder',pts:4,text:'Build 9 roads.'},
+  shoal2:{name:'Fisherfolk',pts:3,text:'Your buildings touch 2 shoals.'},
+};
+
+/* ---- small helpers ---- */
+const rnd=n=>Math.floor(Math.random()*n);
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);const t=a[i];a[i]=a[j];a[j]=t}return a}
+const add=(a,b,k=1)=>{for(let i=0;i<6;i++)a[i]+=b[i]*k;return a};
+const sum5=r=>r[0]+r[1]+r[2]+r[3]+r[4];
+const owner=b=>b<0?-1:b>>1;
+const isHall=b=>b>=0&&(b&1)===1;
+
+/* ---- board ---- */
+function genBoard(np){
+  const rows=np>=5?[[0,3],[-1,3],[-2,3],[-2,2],[-2,1]]:[[0,2],[-1,2],[-2,2],[-2,1],[-2,0]];
+  const cells=[];rows.forEach(([a,b],i)=>{for(let q=a;q<=b;q++)cells.push({q,r:i-2})});
+  const big=cells.length>19;
+  const terr=big?[0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,5,5,5,6]:[0,0,0,0,1,1,1,2,2,2,3,3,3,4,4,4,5,5,6];
+  const nums=[2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12].concat(big?[3,4,5,9,10]:[]);
+  let hexes,geo;
+  for(let tries=0;tries<500;tries++){
+    const T=shuffle(terr.slice()),N=shuffle(nums.slice());let k=0;
+    hexes=cells.map((c,i)=>({q:c.q,r:c.r,t:T[i],n:T[i]===6?0:N[k++]}));
+    geo=buildGeo({hexes});
+    // no two 6/8 next to each other, no equal numbers next to each other, and same terrain not in a clump of 3
+    let ok=true;
+    for(let i=0;i<hexes.length&&ok;i++)for(const j of geo.hnb[i]){if(j<i)continue;const a=hexes[i].n,b=hexes[j].n;
+      if(a&&b&&((pip(a)===5&&pip(b)===5)||a===b))ok=false}
+    if(ok)break;
+  }
+  // harbors: coastal edges spread evenly around the island
+  const coast=geo.edges.map((e,i)=>i).filter(i=>geo.edges[i].hexes.length===1);
+  const ang=i=>{const e=geo.edges[i];return Math.atan2(e.my,e.mx)};
+  coast.sort((a,b)=>ang(a)-ang(b));
+  const nP=big?8:7,kinds=shuffle(big?[0,1,2,3,4,-1,-1,-1]:[0,1,2,3,4,-1,-1]);
+  const off=rnd(coast.length),ports=[];
+  for(let i=0;i<nP;i++){const e=coast[(off+Math.round(i*coast.length/nP))%coast.length];ports.push({e,g:kinds[i]})}
+  const portV=new Set();ports.forEach(p=>{portV.add(geo.edges[p.e].a);portV.add(geo.edges[p.e].b)});
+  // landmarks: six coastal corners spread around the coast, never on a harbor
+  const cv=[];geo.verts.forEach((v,i)=>{if(v.hexes.length<3)cv.push(i)});
+  cv.sort((a,b)=>Math.atan2(geo.verts[a].y,geo.verts[a].x)-Math.atan2(geo.verts[b].y,geo.verts[b].x));
+  const marks=[],o2=rnd(cv.length);
+  for(let i=0;i<6;i++){let k=(o2+Math.round(i*cv.length/6))%cv.length,g=0;while((portV.has(cv[k])||geo.verts[cv[k]].hexes.length!==1&&g<1)&&g++<4)k=(k+1)%cv.length;
+    if(portV.has(cv[k]))k=(k+cv.length-2)%cv.length;marks.push(cv[k])}
+  const ash=hexes.findIndex(h=>h.t===6);
+  return {id:Math.random().toString(36).slice(2,9),hexes,ports,marks,ash};
+}
+const GEO=new WeakMap();
+function buildGeo(board){
+  const hexes=board.hexes,vmap=new Map(),emap=new Map(),verts=[],edges=[];
+  const key=(x,y)=>Math.round(x*1000)+','+Math.round(y*1000);
+  const hc=hexes.map(h=>({x:SQ3*(h.q+h.r/2),y:1.5*h.r}));
+  const corners=[];
+  hexes.forEach((h,i)=>{
+    const cs=[];
+    for(let k=0;k<6;k++){const a=Math.PI/180*(60*k-90),x=hc[i].x+Math.cos(a),y=hc[i].y+Math.sin(a),kk=key(x,y);
+      let id=vmap.get(kk);if(id===undefined){id=verts.length;vmap.set(kk,id);verts.push({x,y,hexes:[],edges:[],nbr:[]})}
+      verts[id].hexes.push(i);cs.push(id)}
+    corners.push(cs);
+    for(let k=0;k<6;k++){const a=cs[k],b=cs[(k+1)%6],ek=Math.min(a,b)+'-'+Math.max(a,b);let id=emap.get(ek);
+      if(id===undefined){id=edges.length;emap.set(ek,id);edges.push({a,b,hexes:[],mx:(verts[a].x+verts[b].x)/2,my:(verts[a].y+verts[b].y)/2});verts[a].edges.push(id);verts[b].edges.push(id);verts[a].nbr.push(b);verts[b].nbr.push(a)}
+      edges[id].hexes.push(i)}
+  });
+  // center the picture
+  let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;verts.forEach(v=>{x0=Math.min(x0,v.x);x1=Math.max(x1,v.x);y0=Math.min(y0,v.y);y1=Math.max(y1,v.y)});
+  const cx=(x0+x1)/2,cy=(y0+y1)/2;
+  verts.forEach(v=>{v.x-=cx;v.y-=cy});edges.forEach(e=>{e.mx-=cx;e.my-=cy});hc.forEach(h=>{h.x-=cx;h.y-=cy});
+  const hnb=hexes.map(()=>[]);
+  for(let i=0;i<hexes.length;i++)for(let j=i+1;j<hexes.length;j++){const d=Math.hypot(hc[i].x-hc[j].x,hc[i].y-hc[j].y);if(d<SQ3+0.01){hnb[i].push(j);hnb[j].push(i)}}
+  return {verts,edges,hc,corners,hnb,w:x1-x0,h:y1-y0};
+}
+function geoOf(board){
+  let g=GEO.get(board);if(g)return g;
+  g=buildGeo(board);
+  g.portOf=new Array(g.verts.length).fill(null);
+  board.ports.forEach(p=>{const e=g.edges[p.e];g.portOf[e.a]=p.g;g.portOf[e.b]=p.g});
+  // static production per corner: pips/36 for each good
+  g.vprod=g.verts.map(v=>{const r=[0,0,0,0,0,0];v.hexes.forEach(h=>{const t=TERR[board.hexes[h].t].g;if(t>=0)r[t]+=pip(board.hexes[h].n)/36});return r});
+  g.markOf=new Array(g.verts.length).fill(-1);board.marks.forEach((v,i)=>g.markOf[v]=i);
+  // graph distances between landmarks (for route values)
+  g.mdist=board.marks.map(a=>{const d=bfsDist(g,a);return board.marks.map(b=>d[b])});
+  GEO.set(board,g);return g;
+}
+function bfsDist(g,s){const d=new Array(g.verts.length).fill(99);d[s]=0;const q=[s];for(let i=0;i<q.length;i++){const u=q[i];for(const w of g.verts[u].nbr)if(d[w]>d[u]+1){d[w]=d[u]+1;q.push(w)}}return d}
+const routePts=d=>Math.max(3,Math.min(7,Math.round(d*0.6)));
+
+/* ---- new game ---- */
+function newGame(specs,opts){
+  const np=specs.length,board=genBoard(np),g=geoOf(board);
+  const S={v:2,board,bv:new Array(g.verts.length).fill(-1),er:new Array(g.edges.length).fill(-1),raider:board.ash,
+    moon:0,phase:'charter',turn:0,start:0,helm:RULES.helmLast?specs.length-1:0,np,opts:Object.assign({calm:false,forgive:false,open:false},opts||{}),
+    players:specs.map((s,i)=>({name:s.name,bot:!!s.bot,res:[0,0,0,0,0,startFood(i,specs.length)],kin:2,fresh:0,born:0,placed:0,crafts:[],ch:[],offer:[],hard:0,roads:0,houses:0,halls:0,lr:0})),
+    spaces:BASE_SPACES.filter(id=>!(SPACES[id].min>np)),sp:{},market:[],decks:{1:[],2:[],3:[]},
+    tide:shuffle(tideDeck()),tideNow:[],tideSeen:[],upcoming:[],offers:[],charterDeck:[],lrHolder:-1,
+    order:[],si:0,pend:null,raidQ:0,log:[],seq:0,hid:0,moonLog:[],winner:null};
+  S.spaces.forEach(id=>S.sp[id]={occ:-1,pile:[0,0,0,0,0,0]});
+  for(const id in CRAFTS)S.decks[CRAFTS[id].tier].push(id);
+  [1,2,3].forEach(t=>shuffle(S.decks[t]));
+  S.market=TIER_SLOTS.map(t=>S.decks[t].pop()||null);
+  const st=k=>shuffle(Object.keys(SPACES).filter(id=>SPACES[id].stage===k&&id!=='kinfolk'));
+  S.upcoming=[...st(1),'kinfolk',...st(2),...st(3),...st(4)];
+  // charters
+  const routes=[];for(let a=0;a<6;a++)for(let b=a+1;b<6;b++)routes.push('R'+a+b);
+  S.charterDeck=shuffle([...routes,...Object.keys(AMB)]);
+  S.players.forEach(p=>{p.offer=[S.charterDeck.pop(),S.charterDeck.pop(),S.charterDeck.pop()]});
+  // snake setup order
+  for(let i=0;i<np;i++)S.order.push(i);for(let i=np-1;i>=0;i--)S.order.push(i);
+  log(S,-1,'A new island rises from the sea.');
+  return S;
+}
+function tideDeck(){const d=[];for(let n=2;n<=12;n++)for(let k=0;k<pip(n);k++)d.push(n);return d}
+function cloneS(S){
+  const T=Object.assign({},S);
+  T.bv=S.bv.slice();T.er=S.er.slice();T.spaces=S.spaces.slice();T.sp={};
+  for(const id in S.sp)T.sp[id]={occ:S.sp[id].occ,pile:S.sp[id].pile.slice()};
+  T.players=S.players.map(p=>Object.assign({},p,{res:p.res.slice(),crafts:p.crafts.slice(),ch:p.ch.slice(),offer:p.offer.slice()}));
+  T.market=S.market.slice();T.decks={1:S.decks[1].slice(),2:S.decks[2].slice(),3:S.decks[3].slice()};
+  T.tide=S.tide.slice();T.tideNow=S.tideNow.slice();T.tideSeen=S.tideSeen.slice();T.upcoming=S.upcoming.slice();
+  T.offers=S.offers.map(o=>({by:o.by,give:o.give.slice(),get:o.get.slice()}));
+  T.charterDeck=S.charterDeck.slice();T.order=S.order;T.pend=S.pend?{pi:S.pend.pi,cards:S.pend.cards.slice()}:null;
+  T.log=S.quiet?S.log:S.log.slice();T.moonLog=S.moonLog;
+  return T;
+}
+function log(S,p,t,x){if(S.quiet)return;S.seq++;S.log.push(Object.assign({s:S.seq,p,t,m:S.moon},x||{}));if(S.log.length>260)S.log.splice(0,S.log.length-260)}
+const has=(p,c)=>{for(let i=0;i<6;i++)if(p.res[i]<c[i])return false;return true};
+const hasCraft=(p,k)=>p.crafts.some(id=>CRAFTS[id][k]);
+const fmt=c=>{const o=[];for(let i=0;i<6;i++)if(c[i])o.push(c[i]+' '+RES[i]);return o.join(', ')||'nothing'};
+
+/* ---- costs and rates ---- */
+function roadCost(p,ship){return ship||hasCraft(p,'cart')?[1,0,0,0,0,0]:ROAD}
+function hallCost(p,disc){const c=HALL.slice();c[2]=Math.max(0,c[2]-(disc||0)-(hasCraft(p,'hallDisc')?1:0));return c}
+function rateOf(S,pi,g){
+  const p=S.players[pi];let r=4;
+  for(const id of p.crafts){const x=CRAFTS[id].rate;if(x&&x<r)r=x}
+  if(r<=2)return r;
+  const geo=geoOf(S.board);
+  for(let v=0;v<S.bv.length;v++){if(owner(S.bv[v])!==pi)continue;const k=geo.portOf[v];if(k===null)continue;
+    if(k===g)return 2;if(k===-1)r=Math.min(r,3)}
+  return r;
+}
+const beds=p=>p.houses+2*p.halls+(hasCraft(p,'bed')?1:0);
+const freeKin=p=>p.kin-p.fresh-p.placed;
+function feedNeed(p){return Math.max(0,2*(p.kin-p.born)+p.born-(hasCraft(p,'herbs')?1:0))}
+function eatRate(p,g){if(g===3)return hasCraft(p,'grain')?Math.max(...p.crafts.map(id=>CRAFTS[id].grain||1)):1;if(g===4)return hasCraft(p,'wool')?2:1;return 0}
+
+/* ---- building legality ---- */
+function canHouse(S,pi,v,setup){
+  const p=S.players[pi],geo=geoOf(S.board);
+  if(S.bv[v]!==-1||p.houses>=5)return false;
+  for(const w of geo.verts[v].nbr)if(S.bv[w]!==-1)return false;
+  if(setup)return true;
+  for(const e of geo.verts[v].edges)if(S.er[e]===pi)return true;
+  return false;
+}
+function canHall(S,pi,v){return S.bv[v]===pi*2&&S.players[pi].halls<4}
+function endOk(S,pi,u,geo){
+  const b=S.bv[u];if(b>=0&&owner(b)===pi)return true;
+  if(b>=0)return false;
+  for(const e of geo.verts[u].edges)if(S.er[e]===pi)return true;
+  return false;
+}
+function canRoad(S,pi,e,fromV){
+  const geo=geoOf(S.board),E=geo.edges[e];
+  if(S.er[e]!==-1||S.players[pi].roads>=15)return false;
+  if(fromV!==undefined&&fromV!==null)return E.a===fromV||E.b===fromV;
+  return endOk(S,pi,E.a,geo)||endOk(S,pi,E.b,geo);
+}
+function houseSpots(S,pi){const o=[];for(let v=0;v<S.bv.length;v++)if(canHouse(S,pi,v,false))o.push(v);return o}
+function roadSpots(S,pi){const o=[];for(let e=0;e<S.er.length;e++)if(canRoad(S,pi,e))o.push(e);return o}
+function setupHouseSpots(S,pi){const o=[];for(let v=0;v<S.bv.length;v++)if(canHouse(S,pi,v,true))o.push(v);return o}
+
+/* ---- longest road ---- */
+function longest(S,pi){
+  const geo=geoOf(S.board),mine=[];for(let e=0;e<S.er.length;e++)if(S.er[e]===pi)mine.push(e);
+  if(mine.length<2)return mine.length;
+  let best=0;const used=new Set();
+  const blocked=u=>{const b=S.bv[u];return b>=0&&owner(b)!==pi};
+  const dfs=(u,len)=>{if(len>best)best=len;if(blocked(u)&&len>0)return;
+    for(const e of geo.verts[u].edges){if(S.er[e]!==pi||used.has(e))continue;used.add(e);const E=geo.edges[e];dfs(E.a===u?E.b:E.a,len+1);used.delete(e)}};
+  const starts=new Set();mine.forEach(e=>{starts.add(geo.edges[e].a);starts.add(geo.edges[e].b)});
+  for(const u of starts){dfs(u,0);if(best>=mine.length)break}
+  return best;
+}
+function updateLR(S){
+  S.players.forEach((p,i)=>p.lr=longest(S,i));
+  const h=S.lrHolder,max=Math.max(...S.players.map(p=>p.lr));
+  if(h>=0&&S.players[h].lr>=max&&S.players[h].lr>=5)return;
+  const top=S.players.map((p,i)=>i).filter(i=>S.players[i].lr===max);
+  const nh=max>=5&&top.length===1?top[0]:-1;
+  if(nh!==h){S.lrHolder=nh;if(nh>=0)log(S,nh,`${S.players[nh].name} takes the longest road (${max}).`)}
+}
+
+/* ---- network checks for charters ---- */
+function reach(S,pi){
+  // corners reachable along pi's own roads (an opponent's building stops the path)
+  const geo=geoOf(S.board),n=S.bv.length,comp=new Int16Array(n).fill(-1),st=[];let c=0;
+  for(let s=0;s<n;s++){
+    if(comp[s]>=0)continue;let own=owner(S.bv[s])===pi;
+    if(!own){const es=geo.verts[s].edges;for(let k=0;k<es.length;k++)if(S.er[es[k]]===pi){own=true;break}}
+    if(!own)continue;
+    st.length=0;st.push(s);comp[s]=c;
+    while(st.length){const u=st.pop();const b=S.bv[u];if(b>=0&&(b>>1)!==pi)continue;
+      const es=geo.verts[u].edges;
+      for(let k=0;k<es.length;k++){const e=es[k];if(S.er[e]!==pi)continue;const E=geo.edges[e],w=E.a===u?E.b:E.a;if(comp[w]<0){comp[w]=c;st.push(w)}}}
+    c++;
+  }
+  return comp;
+}
+function routeDone(S,pi,a,b){const m=S.board.marks,comp=reach(S,pi);return comp[m[a]]>=0&&comp[m[a]]===comp[m[b]]}
+function touches(S,pi){const geo=geoOf(S.board),set=new Set();for(let v=0;v<S.bv.length;v++)if(owner(S.bv[v])===pi)geo.verts[v].hexes.forEach(h=>set.add(h));return set}
+const CHI=new WeakMap();
+function charterInfo(S,id){
+  if(id[0]==='R'){let c=CHI.get(S.board);if(!c){c={};CHI.set(S.board,c)}if(c[id])return c[id];const a=+id[1],b=+id[2],g=geoOf(S.board),d=g.mdist[a][b];return c[id]={name:MARKS[a]+' – '+MARKS[b],pts:routePts(d),text:`Connect ${MARKS[a]} and ${MARKS[b]} with your own roads.`,route:[a,b],dist:d}}
+  return AMB[id];
+}
+function chDone(S,pi){
+  const p=S.players[pi];let comp=null,tch=null;const out=new Array(p.ch.length);
+  for(let i=0;i<p.ch.length;i++){const id=p.ch[i];
+    if(id[0]==='R'){if(!comp)comp=reach(S,pi);const m=S.board.marks,a=m[+id[1]],b=m[+id[2]];out[i]=comp[a]>=0&&comp[a]===comp[b]}
+    else if(id==='terr5'||id==='shoal2'){if(!tch)tch=touches(S,pi);let n=0;
+      if(id==='shoal2'){tch.forEach(h=>{if(S.board.hexes[h].t===5)n++});out[i]=n>=2}else{const t=new Set();tch.forEach(h=>{const x=S.board.hexes[h].t;if(x<6)t.add(x)});out[i]=t.size>=5}}
+    else out[i]=charterDone(S,pi,id);
+  }
+  return out;
+}
+function charterDone(S,pi,id){
+  const p=S.players[pi];
+  if(id[0]==='R')return routeDone(S,pi,+id[1],+id[2]);
+  switch(id){
+    case 'kin5':return p.kin>=5;
+    case 'halls2':return p.halls>=2;
+    case 'build5':return p.houses+p.halls>=5;
+    case 'craft4':return p.crafts.length>=4;
+    case 'terr5':{const t=new Set();touches(S,pi).forEach(h=>{const x=S.board.hexes[h].t;if(x<6)t.add(x)});return t.size>=5}
+    case 'harb2':{const geo=geoOf(S.board);let n=0;for(let v=0;v<S.bv.length;v++)if(owner(S.bv[v])===pi&&geo.portOf[v]!==null)n++;return n>=2}
+    case 'nohard':return p.hard===0;
+    case 'road9':return p.roads>=9;
+    case 'shoal2':{let n=0;touches(S,pi).forEach(h=>{if(S.board.hexes[h].t===5)n++});return n>=2}
+  }
+  return false;
+}
+
+/* ---- scoring ---- */
+function craftPts(S,pi,id,done){
+  const c=CRAFTS[id],p=S.players[pi];
+  switch(c.end){case 'kin':return p.kin;case 'halls':return 2*p.halls;case 'crafts':return p.crafts.length;case 'wool':return c.pts+Math.floor(p.res[4]/2);
+    case 'roads':return Math.floor(p.roads/3);case 'charters':return 2*(done||chDone(S,pi)).filter(Boolean).length}
+  return c.pts;
+}
+function scoreOf(S,pi,hideCh,done){
+  const p=S.players[pi],r={houses:p.houses,halls:2*p.halls,kin:RULES.kinPts*p.kin,crafts:0,charters:0,road:S.lrHolder===pi?RULES.lrPts:0,hard:-RULES.hardship*p.hard};
+  if(!hideCh&&!done&&p.ch.length)done=chDone(S,pi);
+  for(const id of p.crafts)r.crafts+=craftPts(S,pi,id,done);
+  if(!hideCh)p.ch.forEach((id,i)=>{if(done[i])r.charters+=charterInfo(S,id).pts;else if(S.phase==='end'&&!S.opts.forgive)r.charters-=RULES.chPen});
+  r.total=r.houses+r.halls+r.kin+r.crafts+r.charters+r.road+r.hard;
+  return r;
+}
+const total=(S,pi)=>scoreOf(S,pi).total;
+
+/* ---- setup phase ---- */
+function chooseCharters(S,pi,keep){
+  const p=S.players[pi];if(S.phase!=='charter'||S.turn!==pi)return false;
+  if(keep.length<2||keep.length>3||keep.some(k=>!p.offer.includes(k)))return false;
+  p.ch=keep.slice();p.offer.filter(k=>!keep.includes(k)).forEach(k=>S.charterDeck.unshift(k));p.offer=[];
+  log(S,pi,`${p.name} keeps ${keep.length} charters.`);
+  if(pi+1<S.np){S.turn=pi+1}else{S.phase='setup';S.si=0;S.turn=S.order[0]}
+  return true;
+}
+function placeSetup(S,pi,v,e){
+  if(S.phase!=='setup'||S.turn!==pi||!canHouse(S,pi,v,true)||!canRoad(S,pi,e,v))return false;
+  const p=S.players[pi],geo=geoOf(S.board);
+  S.bv[v]=pi*2;p.houses++;S.er[e]=pi;p.roads++;
+  const second=S.si>=S.np;
+  if(second){geo.verts[v].hexes.forEach(h=>{const t=TERR[S.board.hexes[h].t].g;if(t>=0)p.res[t]++})}
+  log(S,pi,`${p.name} lands and builds a house${second?' and takes its first goods':''}.`,{fx:{v:[v],e:[e]}});
+  S.si++;
+  if(S.si>=S.order.length){updateLR(S);startMoon(S)}else S.turn=S.order[S.si];
+  return true;
+}
+
+/* ---- moons ---- */
+function startMoon(S){
+  S.moon++;S.moonLog=[];
+  const nid=S.upcoming[S.moon-1];
+  if(nid&&!S.spaces.includes(nid)){S.spaces.push(nid);S.sp[nid]={occ:-1,pile:[0,0,0,0,0,0]}}
+  S.spaces.forEach(id=>{const d=SPACES[id];S.sp[id].occ=-1;if(d.acc)add(S.sp[id].pile,id==='nets'?[0,0,0,0,0,RULES.nets]:d.acc)});
+  S.start=S.helm;
+  S.players.forEach(p=>{p.placed=0;p.crafts.forEach(id=>{const c=CRAFTS[id];if(c.income)add(p.res,c.income)})});
+  log(S,-1,`Moon ${S.moon} rises.${nid?' New action: '+SPACES[nid].name+'.':''}`,{moon:1});
+  // tides
+  const draw=[];for(let k=0;k<3;k++){if(!S.tide.length)S.tide=shuffle(tideDeck());draw.push(S.tide.pop())}
+  S.tideNow=draw;S.tideSeen=S.tideSeen.concat(draw);S.hid++;
+  const geo=geoOf(S.board),got=S.players.map(()=>[0,0,0,0,0,0]);
+  for(const n of draw){if(n===7)continue;
+    S.board.hexes.forEach((h,hi)=>{if(h.n!==n)return;const g=TERR[h.t].g;if(g<0)return;
+      geo.corners[hi].forEach(v=>{const b=S.bv[v];if(b<0)return;const o=owner(b);
+        if(hi===S.raider&&!hasCraft(S.players[o],'tower'))return;got[o][g]+=isHall(b)?2:1})})}
+  S.players.forEach((p,i)=>{
+    if(sum5(got[i])+got[i][5]===0&&hasCraft(p,'granary'))got[i][3]++;
+    add(p.res,got[i]);if(S.track&&!S.quiet)add(S.track.prod[i],got[i]);
+  });
+  S.lastTides={n:draw,got};
+  log(S,-1,`Tides: ${draw.join(', ')}.`,{tides:draw,got});
+  const sevens=draw.filter(n=>n===7).length;
+  for(let k=0;k<sevens;k++)squall(S);
+  S.raidQ=sevens;
+  if(S.raidQ>0){S.phase='raider';S.turn=S.start}
+  else beginWork(S);
+}
+function squall(S){
+  if(S.opts.calm){log(S,-1,'A squall blows past. Calm seas: no one loses goods.');return}
+  S.players.forEach((p,i)=>{
+    if(hasCraft(p,'safe'))return;const t=sum5(p.res);if(t<=RULES.squallAt)return;
+    let lose=Math.floor(t/2);const lost=[0,0,0,0,0,0];
+    while(lose-->0){let m=0;for(let g=1;g<5;g++)if(p.res[g]>p.res[m])m=g;p.res[m]--;lost[m]++}
+    log(S,i,`The squall takes ${fmt(lost)} from ${p.name}.`);
+  });
+}
+function raidTargets(S,pi,hex){
+  const geo=geoOf(S.board),o=new Set();
+  geo.corners[hex].forEach(v=>{const b=S.bv[v];if(b>=0&&owner(b)!==pi)o.add(owner(b))});
+  return [...o];
+}
+function moveRaider(S,pi,hex,victim,n){
+  if(hex===S.raider||hex<0||hex>=S.board.hexes.length)return false;
+  const t=raidTargets(S,pi,hex);
+  if(t.length&&!t.includes(victim))return false;
+  if(!t.length)victim=-1;
+  S.raider=hex;const p=S.players[pi];let took=[0,0,0,0,0,0];
+  if(victim>=0){const v=S.players[victim];
+    if(!hasCraft(v,'safe'))for(let k=0;k<n;k++){const pool=[];for(let g=0;g<5;g++)for(let j=0;j<v.res[g];j++)pool.push(g);if(!pool.length)break;const g=pool[rnd(pool.length)];v.res[g]--;p.res[g]++;took[g]++}
+    S.hid++;}
+  log(S,pi,`${p.name} moves the raider to a ${TERR[S.board.hexes[hex].t].name.toLowerCase()}${victim>=0?` and steals ${sum5(took)?fmt(took):'nothing'} from ${S.players[victim].name}`:''}.`,{fx:{h:[hex]}});
+  return true;
+}
+function raiderMove(S,pi,hex,victim){
+  if(S.phase!=='raider'||S.turn!==pi)return false;
+  if(!moveRaider(S,pi,hex,victim,1))return false;
+  S.raidQ--;if(S.raidQ<=0)beginWork(S);
+  return true;
+}
+function beginWork(S){S.phase='work';S.turn=S.start;if(freeKin(S.players[S.turn])<=0)nextTurn(S);else beginTurn(S,S.turn)}
+function beginTurn(S,q){S.offers=S.offers.filter(o=>o.by!==q)}
+function nextTurn(S){
+  const n=S.np;
+  for(let k=1;k<=n;k++){const q=(S.turn+k)%n;if(freeKin(S.players[q])>0){S.turn=q;beginTurn(S,q);return}}
+  endMoon(S);
+}
+function endMoon(S){
+  S.players.forEach(p=>{p.placed=0;p.fresh=0});
+  S.spaces.forEach(id=>S.sp[id].occ=-1);
+  if(FEASTS.includes(S.moon)){
+    S.phase='feast';S.fi=0;S.turn=S.start;
+    S.players.forEach((p,i)=>{if(hasCraft(p,'shepherd')&&p.res[4]>=2){p.res[4]++;log(S,i,`${p.name}'s flock grows: +1 wool.`)}});
+    log(S,-1,`Feast after moon ${S.moon}: each kin eats 2 food.`,{feast:1});
+  }else if(S.halt)S.phase='pause';else startMoon(S);
+}
+function eat(S,pi,g){
+  if(S.phase!=='feast'||S.turn!==pi)return false;
+  const p=S.players[pi];if((g!==3&&g!==4)||p.res[g]<1)return false;
+  p.res[g]--;p.res[5]+=eatRate(p,g);return true;
+}
+function finishFeast(S,pi){
+  if(S.phase!=='feast'||S.turn!==pi)return false;
+  const p=S.players[pi],need=feedNeed(p),short=Math.max(0,need-p.res[5]);
+  p.res[5]-=need-short;p.hard+=short;p.born=0;
+  log(S,pi,short?`${p.name} feeds the family but is ${short} food short: ${short} hardship.`:`${p.name} feeds the family (${need} food).`,{fx:{feast:short}});
+  S.fi++;
+  if(S.fi<S.np)S.turn=(S.start+S.fi)%S.np;
+  else if(S.moon>=MOONS)endGame(S);
+  else if(S.halt)S.phase='pause';
+  else startMoon(S);
+  return true;
+}
+function endGame(S){
+  S.phase='end';
+  const sc=S.players.map((p,i)=>({i,t:total(S,i),tb:sum5(p.res)+p.res[5]}));
+  sc.sort((a,b)=>b.t-a.t||b.tb-a.tb);
+  S.winner=sc[0].i;
+  log(S,-1,`The tenth moon sets. ${S.players[S.winner].name} wins with ${sc[0].t} points.`);
+}
+
+/* ---- trading (free, before you place) ---- */
+function canFree(S,pi){return (S.phase==='work'&&S.turn===pi&&!S.pend)||(S.phase==='feast'&&S.turn===pi)}
+function tradeSupply(S,pi,give,get){
+  if(!canFree(S,pi)||give===get)return false;
+  const p=S.players[pi],r=rateOf(S,pi,give);if(p.res[give]<r)return false;
+  p.res[give]-=r;p.res[get]++;log(S,pi,`${p.name} trades ${r} ${RES[give]} for 1 ${RES[get]}.`,{minor:1});return true;
+}
+function postOffer(S,pi,give,get){
+  if(S.phase!=='work'||S.turn!==pi)return false;
+  const p=S.players[pi];if(!has(p,give)||sum5(give)+give[5]<1||sum5(get)+get[5]<1)return false;
+  for(let i=0;i<6;i++)if(give[i]&&get[i])return false;
+  S.offers=S.offers.filter(o=>o.by!==pi);S.offers.push({by:pi,give:give.slice(),get:get.slice()});
+  log(S,pi,`${p.name} offers ${fmt(give)} for ${fmt(get)}.`);return true;
+}
+function offerOk(S,o,pi){return o.by!==pi&&has(S.players[o.by],o.give)&&has(S.players[pi],o.get)}
+function acceptOffer(S,pi,k){
+  if(!canFree(S,pi)||S.phase!=='work')return false;
+  const o=S.offers[k];if(!o||!offerOk(S,o,pi))return false;
+  const a=S.players[pi],b=S.players[o.by];
+  add(a.res,o.get,-1);add(b.res,o.get);add(b.res,o.give,-1);add(a.res,o.give);
+  S.offers.splice(k,1);
+  log(S,pi,`${a.name} takes ${b.name}'s offer: ${fmt(o.give)} for ${fmt(o.get)}.`);return true;
+}
+
+/* ---- placing a kin ---- */
+function canPlace(S,pi,id){
+  return S.phase==='work'&&S.turn===pi&&!S.pend&&S.sp[id]&&S.sp[id].occ<0&&freeKin(S.players[pi])>0&&placeOk(S,pi,id);
+}
+function placeOk(S,pi,id){
+  const d=SPACES[id],p=S.players[pi];
+  if(d.grow===1)return p.kin<MAXKIN&&beds(p)>p.kin;
+  if(d.grow===2)return p.kin<MAXKIN;
+  return true;
+}
+function buildLimits(S,pi,id){
+  const d=SPACES[id].build,p=S.players[pi];if(!d)return null;
+  return {roads:(d.roads||0)+(d.roads&&d.roads<99&&!d.ship&&hasCraft(p,'surveyor')?1:0),homes:d.homes||0,halls:d.halls||0,ship:!!d.ship,hallDisc:d.hallDisc||0,free:d.free||0};
+}
+/* A full move: {sp, b:[{k:'road'|'house'|'hall',at}], g:[goods], c:slot, hex, vic, bz:[[give,get],...]} */
+function applyMove(S,pi,m){
+  if(!canPlace(S,pi,m.sp))return false;
+  const id=m.sp,d=SPACES[id],p=S.players[pi],sp=S.sp[id];
+  sp.occ=pi;p.placed++;
+  const gained=[0,0,0,0,0,0];
+  if(d.acc){add(gained,sp.pile);sp.pile=[0,0,0,0,0,0]}
+  if(d.gain)add(gained,d.gain);
+  p.crafts.forEach(c=>{const b=CRAFTS[c].bonus;if(b&&b[id])add(gained,b[id])});
+  if(d.feast)gained[5]+=p.kin;
+  if(d.pick){const n=d.pick+(id==='odd'||id==='market'?(hasCraft(p,'tools')?1:0):0);const g=m.g||[];if(g.length!==n||g.some(x=>!(x>=0&&x<5)))return false;g.forEach(x=>gained[x]++)}
+  add(p.res,gained);if(S.track&&!S.quiet){add(S.track.act[pi],gained);S.track.use[id]=(S.track.use[id]||0)+1}
+  let text=`${p.name}: ${d.name}`;
+  if(sum5(gained)+gained[5])text+=` (+${fmt(gained)})`;
+  const fx={sp:id};
+  if(d.grow){p.kin++;p.fresh++;p.born++;text+=' — a new kin joins'}
+  if(id==='helm'){S.helm=pi}
+  if(d.bazaar&&m.bz){for(const [a,b] of m.bz){if(a===b||p.res[a]<2)return false;p.res[a]-=2;p.res[b]++}if(m.bz.length)text+=`, trades ${m.bz.length}×2:1`}
+  if(d.build){const L=buildLimits(S,pi,id),cnt={road:0,home:0,hall:0};fx.v=[];fx.e=[];
+    for(const b of (m.b||[])){
+      if(b.k==='road'){if(cnt.road>=L.roads||!canRoad(S,pi,b.at))return false;const c=cnt.road<L.free?[0,0,0,0,0,0]:roadCost(p,L.ship);if(!has(p,c))return false;add(p.res,c,-1);S.er[b.at]=pi;p.roads++;cnt.road++;fx.e.push(b.at)}
+      else if(b.k==='house'){if(cnt.home>=L.homes||!canHouse(S,pi,b.at))return false;if(!has(p,HOUSE))return false;add(p.res,HOUSE,-1);S.bv[b.at]=pi*2;p.houses++;cnt.home++;fx.v.push(b.at)}
+      else if(b.k==='hall'){const lim=L.halls||L.homes;const used=L.halls?cnt.hall:cnt.home;if(used>=lim||!canHall(S,pi,b.at))return false;const c=hallCost(p,L.hallDisc);if(!has(p,c))return false;add(p.res,c,-1);S.bv[b.at]=pi*2+1;p.houses--;p.halls++;if(L.halls)cnt.hall++;else cnt.home++;fx.v.push(b.at)}
+      else return false;
+    }
+    const parts=[];if(cnt.road)parts.push(cnt.road+' road'+(cnt.road>1?'s':''));
+    const nh=(m.b||[]).filter(b=>b.k==='house').length,nl=(m.b||[]).filter(b=>b.k==='hall').length;
+    if(nh)parts.push(nh>1?nh+' houses':'a house');if(nl)parts.push(nl>1?nl+' halls':'a hall');
+    text+=parts.length?' — builds '+parts.join(' and '):' — builds nothing';
+    if(cnt.road||nh||nl)updateLR(S);
+  }
+  if(d.craft){const k=m.c;const cid=S.market[k];if(cid==null)return false;const cc=CRAFTS[cid];if(!has(p,cc.cost))return false;
+    add(p.res,cc.cost,-1);p.crafts.push(cid);S.market[k]=S.decks[TIER_SLOTS[k]].pop()||null;S.hid++;text+=` — buys ${cc.name}`;fx.craft=cid}
+  if(d.raid){if(!moveRaider(S,pi,m.hex,m.vic===undefined?-1:m.vic,2))return false;text=null}
+  if(d.draw){const cards=[];for(let k=0;k<2;k++)if(S.charterDeck.length)cards.push(S.charterDeck.pop());S.hid++;S.pend={pi,cards};text+=' — draws 2 charters'}
+  if(m.preview)return true;
+  if(text)log(S,pi,text+'.',{fx});
+  S.moonLog.push({p:pi,sp:id});
+  if(!S.pend)nextTurn(S);
+  return true;
+}
+function keepCharters(S,pi,keep){
+  if(!S.pend||S.pend.pi!==pi)return false;
+  const p=S.players[pi];if(keep.some(k=>!S.pend.cards.includes(k)))return false;
+  keep.forEach(k=>p.ch.push(k));S.pend.cards.filter(k=>!keep.includes(k)).forEach(k=>S.charterDeck.unshift(k));
+  log(S,pi,`${p.name} keeps ${keep.length} new charter${keep.length===1?'':'s'}.`);
+  S.pend=null;nextTurn(S);return true;
+}
+
+/* ================= Strand — computer players =================
+   Strong level: candidate moves (every space × concrete builds/goods/trades) → static evaluation + denial of
+   opponents' best spaces → the closest few are played out to the end of the moon (or to the end of the game from
+   moon 8) many times with fast policies, on samples of hidden information (tide order, craft decks, others' charters). */
+const WB={setupEval:1,routeCap:1.2,gv:[.42,.42,.5,.46,.4],act:1.0,bed:.75,helm:1.6,spot:1,ready:.3,longFood:.32,deny:.6,lr:.5,route:1,crafts:1,kinHungry:0,craftBias:0,roadBias:0,noise:.05};
+const PERSONA={
+  balanced:{},
+  base0:{setupEval:0,routeCap:2.3,helm:.8},
+  roads:{route:1.6,lr:1.6,spot:1.5,roadBias:.6,act:.8,bed:.5},
+  family:{act:1.3,bed:1.3,kinHungry:1.5,longFood:.4},
+  crafts:{crafts:1.6,craftBias:1.2,act:.9},
+  hoard:{gv:[.55,.55,.62,.58,.52],act:.85},
+};
+const wOf=(S,pi)=>S.W&&S.W[pi]||WB;
+const LEVEL={greedy:{K:1,R:0,deny:false},deny:{K:1,R:0,deny:true},search:{K:5,R:4,deny:true,endK:5,endR:4,endFrom:99,budget:140,kap:0,myNext:true},late:{K:4,R:4,deny:true,endK:4,endR:4,endFrom:8,rollFrom:8,budget:160},own:{K:5,R:4,deny:true,endK:4,endR:4,endFrom:9,budget:160,kap:0},own2:{K:5,R:4,deny:true,endK:5,endR:4,endFrom:99,budget:160,kap:0},own3:{K:5,R:4,deny:true,endK:5,endR:4,endFrom:99,budget:200,kap:0,myNext:true},blend:{K:4,R:4,deny:true,endK:4,endR:4,endFrom:99,budget:200,kap:0,myNext:true,blend:.5},deny2:{K:1,R:0,deny:true}};
+const NOW=()=>typeof performance!=='undefined'?performance.now():Date.now();
+let AIDBG=null;
+
+/* ---- hidden information: resample everything this player cannot see ---- */
+function determinize(S,pi){
+  const T=cloneS(S);T.quiet=true;T.log=[];
+  shuffle(T.tide);[1,2,3].forEach(k=>shuffle(T.decks[k]));
+  const stOf=id=>SPACES[id].stage;const fut=T.upcoming.slice(T.moon);
+  [1,2,3,4].forEach(st=>{const idx=[],ids=[];fut.forEach((id,k)=>{if(stOf(id)===st&&id!=='kinfolk'){idx.push(k);ids.push(id)}});shuffle(ids);idx.forEach((k,j)=>fut[k]=ids[j])});
+  T.upcoming=T.upcoming.slice(0,T.moon).concat(fut);
+  if(!T.opts.open){
+    const pool=T.charterDeck.slice();T.players.forEach((p,i)=>{if(i!==pi){pool.push(...p.ch,...p.offer)}});
+    if(T.pend&&T.pend.pi!==pi)pool.push(...T.pend.cards);
+    shuffle(pool);T.players.forEach((p,i)=>{if(i===pi)return;p.ch=pool.splice(0,p.ch.length);p.offer=pool.splice(0,p.offer.length)});
+    if(T.pend&&T.pend.pi!==pi)T.pend.cards=pool.splice(0,T.pend.cards.length);
+    T.charterDeck=pool;
+  }
+  return T;
+}
+
+/* ---- evaluation ---- */
+function vh(geo,S){
+  if(!geo.vh){geo.vh=geo.verts.map(v=>v.hexes.map(h=>{const t=TERR[S.board.hexes[h].t].g;return {h,g:t,p:pip(S.board.hexes[h].n)/36}}).filter(x=>x.g>=0))}
+  return geo.vh;
+}
+function prodRate(S,pi){
+  const geo=geoOf(S.board),VH=vh(geo,S),r=[0,0,0,0,0,0],p=S.players[pi],tw=hasCraft(p,'tower');
+  for(let v=0;v<S.bv.length;v++){const b=S.bv[v];if(b<0||owner(b)!==pi)continue;const m=isHall(b)?2:1;
+    for(const x of VH[v])if(x.h!==S.raider||tw)r[x.g]+=x.p*m}
+  return r;
+}
+function tidesLeft(S){const L=MOONS-S.moon;return S.phase==='charter'||S.phase==='setup'?3*MOONS:3*L}
+function feastsAhead(S,pi){
+  const out=[];for(const f of FEASTS){if(f>S.moon)out.push(f);else if(f===S.moon){if(S.phase==='work'||S.phase==='raider')out.push(f);else if(S.phase==='feast'){const done=(S.np+pi-S.start)%S.np<S.fi;if(!done)out.push(f)}}}
+  return out;
+}
+// 0-1 BFS: new roads needed to reach each corner from the sources (own roads cost 0, free edges 1); stops past maxD
+const BQ=new Int16Array(8192);
+function roadBFS(S,pi,sources,maxD,target){
+  const geo=geoOf(S.board),n=S.bv.length,d=new Int8Array(n).fill(99);
+  maxD=maxD===undefined?60:maxD;
+  let head=4096,tail=4096;
+  for(const s of sources){d[s]=0;BQ[tail++]=s}
+  while(head<tail){const u=BQ[head++];const du=d[u];if(u===target)break;const bu=S.bv[u];if(bu>=0&&(bu>>1)!==pi&&du>0)continue;
+    const es=geo.verts[u].edges;
+    for(let k=0;k<es.length;k++){const e=es[k],o=S.er[e];if(o!==-1&&o!==pi)continue;const E=geo.edges[e],w=E.a===u?E.b:E.a;
+      if(o===pi){if(du<d[w]){d[w]=du;BQ[--head]=w}}
+      else if(du+1<d[w]&&du+1<=maxD){d[w]=du+1;BQ[tail++]=w}}}
+  return d;
+}
+function netVerts(S,pi){
+  const geo=geoOf(S.board),o=[];
+  for(let v=0;v<S.bv.length;v++){const b=S.bv[v];if(b>=0&&owner(b)===pi){o.push(v);continue}if(b>=0)continue;for(const e of geo.verts[v].edges)if(S.er[e]===pi){o.push(v);break}}
+  return o;
+}
+const SVC=new WeakMap();
+function spotBase(S,W){
+  let m=SVC.get(S.board);if(!m){m=new Map();SVC.set(S.board,m)}
+  let b=m.get(W);if(b)return b;
+  const geo=geoOf(S.board),VH=vh(geo,S),n=geo.verts.length;
+  b={base:new Float64Array(n),port:new Float64Array(n),hex:VH.map(xs=>xs.map(x=>({h:x.h,v:x.p*W.gv[Math.min(x.g,4)]*(x.g===5?1.1:1)})))};
+  for(let v=0;v<n;v++){let s=0;for(const x of b.hex[v])s+=x.v;b.base[v]=s;const port=geo.portOf[v];b.port[v]=port===null?0:port===-1?.25:.35}
+  m.set(W,b);return b;
+}
+function spotVal(S,pi,v,L,W){
+  const b=spotBase(S,W);let s=b.base[v];
+  for(const x of b.hex[v])if(x.h===S.raider){s-=x.v;break}
+  return s*3*L+b.port[v]*(L>2?1:.5);
+}
+function free5(S,v,geo){if(S.bv[v]!==-1)return false;const nb=(geo||geoOf(S.board)).verts[v].nbr;for(let k=0;k<nb.length;k++)if(S.bv[nb[k]]!==-1)return false;return true}
+function routeNeed(S,pi,a,b){
+  const m=S.board.marks;const d=roadBFS(S,pi,[m[a]],60,m[b]);return d[m[b]];
+}
+function ambProb(S,pi,id,L){
+  const p=S.players[pi];const k=x=>Math.max(0,Math.min(1,x));
+  switch(id){
+    case 'kin5':{const miss=5-p.kin;return k(.85-miss*.55/Math.max(1,L/2.2))}
+    case 'halls2':{const miss=2-p.halls;return k(.9-miss*.6/Math.max(1,L/2))}
+    case 'build5':{const miss=5-p.houses-p.halls;return k(.9-miss*.45/Math.max(1,L/1.8))}
+    case 'craft4':{const miss=4-p.crafts.length;return k(.9-miss*.5/Math.max(1,L/2))}
+    case 'terr5':{const t=new Set();touches(S,pi).forEach(h=>{const x=S.board.hexes[h].t;if(x<6)t.add(x)});const miss=5-t.size;return k(.9-miss*.5/Math.max(1,L/2.5))}
+    case 'harb2':{const geo=geoOf(S.board);let n=0;for(let v=0;v<S.bv.length;v++)if(owner(S.bv[v])===pi&&geo.portOf[v]!==null)n++;return k(.85-(2-n)*.55/Math.max(1,L/3))}
+    case 'nohard':return p.hard?0:k(1-feastsAhead(S,pi).length*.08);
+    case 'road9':{const miss=9-p.roads;return k(.95-miss*.4/Math.max(1,L/1.3))}
+    case 'shoal2':{let n=0;touches(S,pi).forEach(h=>{if(S.board.hexes[h].t===5)n++});return k(.85-(2-n)*.55/Math.max(1,L/3))}
+  }
+  return 0;
+}
+const ACTIVE_CRAFT={smoke:'feast',bake:'feast',mill:'feast',netloft:.15,sawpit:.3,kiln:.26,cart:.16,ferry:.12,salt:.1,lookout:.08,herbs:'herbs',tools:.12,shepherd:'shep',mason:.1,granary:.1,surveyor:.2,tavern:.22,tower:.08,harborhall:.2};
+function evalP(S,pi,W,P){
+  W=W||wOf(S,pi);
+  const p=S.players[pi];
+  const done=chDone(S,pi);
+  if(S.phase==='end'){const sc=scoreOf(S,pi,false,done);return sc.total+(sum5(p.res)+p.res[5])*.01}
+  const L=MOONS-S.moon,TL=tidesLeft(S),dec=L>=2?1:L===1?.75:(S.phase==='work'&&freeKin(p)>0?.2:.03);
+  const sc=scoreOf(S,pi,false,done);let v=sc.total;
+  if(P)P.mark('charters still',v);
+  // charters still open
+  const pen=S.opts.forgive?0:RULES.chPen;
+  for(let ci=0;ci<p.ch.length;ci++){const id=p.ch[ci];if(done[ci])continue;const info=charterInfo(S,id);let pr;
+    if(info.route){const need=routeNeed(S,pi,info.route[0],info.route[1]);const cap=(W.routeCap||2.3)*L+(S.phase==='work'&&freeKin(p)>0?1.5:0)+(S.moon===0?4:0);
+      pr=need>=99||need>15-p.roads?0:Math.max(0,1-need/(cap+1))**1.3;pr*=W.route>1?Math.min(1,W.route*.75):1}
+    else pr=ambProb(S,pi,id,L);
+    v+=pr*(info.pts+pen)*Math.min(1.3,W.route)-pen}
+  if(P)P.mark('production sti',v);
+  // production still to come
+  const rate=prodRate(S,pi);
+  for(let g=0;g<5;g++)v+=rate[g]*TL*W.gv[g]*dec;
+  if(P)P.mark('goods in hand ',v);
+  // goods in hand (diminishing past 6 of a kind)
+  let goods=0;for(let g=0;g<5;g++){const n=p.res[g];goods+=W.gv[g]*(Math.min(n,6)+.35*Math.max(0,n-6))}
+  v+=goods*dec;
+  if(P)P.mark('squall risk ac',v);
+  // squall risk across the next tides
+  const s5=sum5(p.res);if(s5>RULES.squallAt&&!S.opts.calm&&!hasCraft(p,'safe')&&L>0&&S.phase==='work'){const sev=S.tide.filter(n=>n===7).length/Math.max(1,S.tide.length);v-=(s5/2)*.42*(1-(1-sev)**3)*.5}
+  if(P)P.mark('food: near fea',v);
+  // food: near feast hardship and long-run need
+  const fa=feastsAhead(S,pi);const rg=eatRate(p,3),rw=eatRate(p,4);
+  if(fa.length){
+    const d=fa[0]-S.moon,need=feedNeed(p);const inc=rate[5]*3*d+(hasCraft(p,'income')?d:0);
+    let def=need-p.res[5]-inc;const conv=p.res[3]*rg+p.res[4]*rw;
+    if(def>0){const cover=Math.min(def,conv);const hard=def-cover;
+      const u=d===0?(S.phase==='work'&&freeKin(p)>0?.7:1):d===1?.5:.3;
+      v-=hard*RULES.hardship*u*1.05+cover*.18}
+    const later=fa.length-1;
+    if(later>0){const totalNeed=later*(2*p.kin-(hasCraft(p,'herbs')?1:0));const supply=Math.max(0,-def)+(rate[5]+rate[3]*rg*.5+rate[4]*rw*.5)*TL+(hasCraft(p,'income')?L:0);
+      const ld=totalNeed-supply;if(ld>0)v-=ld*W.longFood}
+    else if(def<0)v+=Math.min(-def,4)*.06;
+  }else v+=p.res[5]*.01;
+  if(P)P.mark('family: action',v);
+  // family: actions still to take
+  v+=(p.kin*L+(S.phase==='work'?freeKin(p):0))*W.act*(L>0||S.phase==='work'?1:0);
+  if(W.kinHungry)v+=p.kin*W.kinHungry*(L>2?1:.3);
+  const fb=Math.min(beds(p),MAXKIN)-p.kin;
+  if(fb>0&&L>=1){const bv=Math.min(L,6)*.5*W.bed;v+=bv+(fb>1?bv*.35:0)}
+  if(P)P.mark('helm next moon',v);
+  // helm next moon
+  if(S.helm===pi&&L>0)v+=W.helm*(L>=2?1:.6);
+  if(P)P.mark('longest road c',v);
+  // longest road chase
+  if(S.lrHolder!==pi&&p.lr>=3){let mx=0;for(let i=0;i<S.np;i++)if(i!==pi&&S.players[i].lr>mx)mx=S.players[i].lr;if(p.lr>=mx-1)v+=W.lr*(p.lr>=mx?1:.5)*Math.min(1,L/3)}
+  if(P)P.mark('places to grow',v);
+  // places to grow: best spot reachable with 0/1/2 more roads
+  if(p.houses+p.halls<9&&p.houses<5&&L>=1){
+    const nv=netVerts(S,pi),d=roadBFS(S,pi,nv,2);let best=0;
+    const geo=geoOf(S.board);for(let x=0;x<S.bv.length;x++){if(d[x]>2||!free5(S,x,geo))continue;const f=d[x]===0?.35:d[x]===1?.2:.1;const sv=spotVal(S,pi,x,L,W)*f;if(sv>best)best=sv}
+    v+=best*W.spot;
+  }
+  if(P)P.mark('ready to build',v);
+  // ready to build
+  if(L>=1||(S.phase==='work'&&freeKin(p)>0)){const rk=L>=1?1:.5;if(has(p,HOUSE))v+=W.ready*rk;if(p.houses>0&&has(p,hallCost(p,0)))v+=W.ready*rk}
+  if(P)P.mark('craft effects ',v);
+  // craft effects still to use
+  for(const id of p.crafts){const a=ACTIVE_CRAFT[id];if(!a)continue;let x=0;
+    if(a==='feast'){const pr=prodRate(S,pi);x=fa.length*Math.min(.6,.15+(id==='smoke'?pr[4]:pr[3])*3)*(id==='mill'?1.4:1)}else if(a==='herbs')x=fa.length*.4;else if(a==='shep')x=fa.length*(p.res[4]>=2?.3:.1);else x=a*L;
+    v+=x*W.crafts}
+  if(W.craftBias)v+=p.crafts.length*W.craftBias*(L>1?1:.3);
+  if(W.roadBias)v+=p.roads*W.roadBias*(L>1?1:.3);
+  if(P)P.mark('end',v);
+  return v;
+}
+function relVal(S,pi,k){
+  const me=evalP(S,pi);let mx=-1e9;
+  for(let i=0;i<S.np;i++)if(i!==pi){const x=evalP(S,i);if(x>mx)mx=x}
+  return me-k*mx;
+}
+
+/* ---- funding: trades with the supply to afford a cost ---- */
+function fund(S,pi,cost,keepFood){
+  const p=S.players[pi],res=p.res.slice(),tr=[];
+  const reserve=[0,0,0,0,0,keepFood||0];
+  for(let g=0;g<6;g++){
+    while(res[g]<cost[g]){
+      let best=-1,bs=-1;
+      for(let h=0;h<6;h++){if(h===g)continue;const r=rateOf(S,pi,h);const spare=res[h]-cost[h]-reserve[h];if(spare>=r&&spare-r>bs){bs=spare-r;best=h}}
+      if(best<0)return null;
+      const r=rateOf(S,pi,best);res[best]-=r;res[g]++;tr.push([best,g]);if(tr.length>8)return null;
+    }
+  }
+  return tr;
+}
+function foodReserve(S,pi){const p=S.players[pi],fa=feastsAhead(S,pi);if(!fa.length)return 0;return fa[0]-S.moon<=1?Math.min(p.res[5],feedNeed(p)):0}
+
+/* ---- apply a bot move on a scratch state ---- */
+function applyFull(S,pi,m){
+  if(m.tr)for(const [a,b] of m.tr)if(!tradeSupply(S,pi,a,b))return false;
+  if(m.acc!==undefined&&m.acc>=0){if(!acceptOffer(S,pi,m.acc))return false}
+  if(!applyMove(S,pi,m))return false;
+  if(S.pend&&S.pend.pi===pi)keepCharters(S,pi,botKeep(S,pi,S.pend.cards));
+  return true;
+}
+function tryMove(S,pi,m){const T=cloneS(S);T.quiet=true;T.halt=true;return applyFull(T,pi,m)?T:null}
+
+/* ---- candidate generation ---- */
+function pickCombos(n){const o=[];const rec=(k,from,cur)=>{if(k===0){o.push(cur.slice());return}for(let g=from;g<5;g++){cur.push(g);rec(k-1,g,cur);cur.pop()}};rec(n,0,[]);return o}
+const PICKS={1:pickCombos(1),2:pickCombos(2),3:pickCombos(3)};
+function targetCosts(S,pi){
+  const p=S.players[pi],o=[];
+  if(p.houses<5)o.push({k:'house',c:HOUSE});
+  if(p.houses>0&&p.halls<4)o.push({k:'hall',c:hallCost(p,0)});
+  o.push({k:'road',c:[2,2,0,0,0,0]});
+  S.market.forEach((id,k)=>{if(id)o.push({k:'craft',c:CRAFTS[id].cost,slot:k})});
+  return o;
+}
+function missingOf(p,c){const m=[0,0,0,0,0,0];let n=0;for(let g=0;g<6;g++){m[g]=Math.max(0,c[g]-p.res[g]);n+=m[g]}return {m,n}}
+function bestHouseSpots(S,pi,list,L,k){
+  const W=wOf(S,pi);return list.map(v=>({v,s:spotVal(S,pi,v,L,W)})).sort((a,b)=>b.s-a.s).slice(0,k).map(x=>x.v);
+}
+function buildMoves(S,pi,id,full){
+  const p=S.players[pi],L=buildLimits(S,pi,id),moves=[],LM=Math.max(1,MOONS-S.moon);
+  const kf=foodReserve(S,pi);
+  const withFund=(b,cost)=>{if(has(p,cost))return {sp:id,b};const tr=fund(S,pi,cost,kf);return tr?{sp:id,b,tr}:null};
+  if(L.halls){ // masons
+    const hs=[];for(let v=0;v<S.bv.length;v++)if(S.bv[v]===pi*2)hs.push(v);
+    hs.sort((a,b)=>spotVal(S,pi,b,LM,WB)-spotVal(S,pi,a,LM,WB));
+    const c1=hallCost(p,L.hallDisc);
+    if(hs[0]!==undefined){const m=withFund([{k:'hall',at:hs[0]}],c1);if(m)moves.push(m)}
+    if(hs.length>1){const c2=add(c1.slice(),c1);const m=withFund([{k:'hall',at:hs[0]},{k:'hall',at:hs[1]}],c2);if(m)moves.push(m)}
+    return moves;
+  }
+  if(L.roads>=99){ // great works: greedy chain of single builds by evaluation
+    const T=cloneS(S);T.quiet=true;const seq=[];
+    for(let it=0;it<8;it++){
+      const opts=[];const q=T.players[pi];
+      if(q.halls<4)for(let v=0;v<T.bv.length;v++)if(T.bv[v]===pi*2&&has(q,hallCost(q,0)))opts.push({k:'hall',at:v});
+      if(has(q,HOUSE))houseSpots(T,pi).forEach(v=>opts.push({k:'house',at:v}));
+      if(has(q,roadCost(q,false)))roadSpots(T,pi).forEach(e=>opts.push({k:'road',at:e}));
+      if(!opts.length)break;
+      const base=evalP(T,pi);let best=null,bv=base+.05;
+      for(const b of opts.slice(0,40)){const U=cloneS(T);U.quiet=true;const c=b.k==='road'?roadCost(q,false):b.k==='house'?HOUSE:hallCost(q,0);
+        add(U.players[pi].res,c,-1);if(b.k==='road'){U.er[b.at]=pi;U.players[pi].roads++}else if(b.k==='house'){U.bv[b.at]=pi*2;U.players[pi].houses++}else{U.bv[b.at]=pi*2+1;U.players[pi].houses--;U.players[pi].halls++}
+        const x=evalP(U,pi);if(x>bv){bv=x;best={b,U}}}
+      if(!best)break;seq.push(best.b);
+      const c=best.b.k==='road'?roadCost(q,false):best.b.k==='house'?HOUSE:hallCost(q,0);add(q.res,c,-1);
+      if(best.b.k==='road'){T.er[best.b.at]=pi;q.roads++}else if(best.b.k==='house'){T.bv[best.b.at]=pi*2;q.houses++}else{T.bv[best.b.at]=pi*2+1;q.houses--;q.halls++}
+    }
+    moves.push({sp:id,b:seq});return moves;
+  }
+  const rc=roadCost(p,L.ship);
+  // homes with no roads
+  if(L.homes){
+    const spots=houseSpots(S,pi);bestHouseSpots(S,pi,spots,LM,full?4:1).forEach(v=>{const m=withFund([{k:'house',at:v}],HOUSE);if(m)moves.push(m)});
+    if(p.halls<4){const hs=[];for(let v=0;v<S.bv.length;v++)if(S.bv[v]===pi*2)hs.push(v);
+      bestHouseSpots(S,pi,hs,LM,full?2:1).forEach(v=>{const m=withFund([{k:'hall',at:v}],hallCost(p,0));if(m)moves.push(m)})}
+  }
+  // roads: 1..L.roads, then maybe a house at the end
+  if(L.roads&&p.roads<15){
+    const T=cloneS(S);T.quiet=true;
+    const r1=roadSpots(T,pi);
+    const evalRoads=(path)=>{ // apply path on scratch and see if a house fits
+      const U=cloneS(S);U.quiet=true;for(const e of path){U.er[e]=pi;U.players[pi].roads++}
+      return U;
+    };
+    const seqs=[];
+    if(full){
+      r1.forEach(e=>seqs.push([e]));
+      if(L.roads>=2)r1.forEach(e=>{const U=evalRoads([e]);roadSpots(U,pi).forEach(f=>{if(f>e||!r1.includes(f))seqs.push([e,f])})});
+    }else{
+      // quick: aim at the best spot within reach of the allowed roads
+      const nv=netVerts(S,pi),d=roadBFS(S,pi,nv);let tgt=-1,bs=0;const W=wOf(S,pi);
+      for(let x=0;x<S.bv.length;x++){if(d[x]<1||d[x]>L.roads+1||!free5(S,x))continue;const s=spotVal(S,pi,x,LM,W)/(1+.35*d[x]);if(s>bs){bs=s;tgt=x}}
+      // route charters pull roads too
+      const pathTo=(goal)=>{const geo=geoOf(S.board);const dd=roadBFS(S,pi,[goal]);let path=[],cur=null,cd=99;
+        for(const u of nv)if(dd[u]<cd){cd=dd[u];cur=u}
+        if(cur===null||cd>=99)return [];
+        while(path.length<L.roads&&dd[cur]>0){let nx=null;for(const e of geo.verts[cur].edges){const E=geo.edges[e],w=E.a===cur?E.b:E.a;if(S.er[e]===-1&&dd[w]===dd[cur]-1&&!(S.bv[cur]>=0&&owner(S.bv[cur])!==pi)){nx={e,w};break}if(S.er[e]===pi&&dd[w]===dd[cur]){}}
+          if(!nx)break;path.push(nx.e);cur=nx.w}
+        return path};
+      if(tgt>=0)seqs.push(pathTo(tgt));
+      for(const id2 of p.ch){if(id2[0]!=='R'||charterDone(S,pi,id2))continue;const a=+id2[1],b=+id2[2],m=S.board.marks;
+        const ca=reach(S,pi);const goal=ca[m[a]]>=0?m[b]:m[a];const pth=pathTo(goal);if(pth.length)seqs.push(pth)}
+    }
+    for(const sq of seqs){
+      if(!sq.length)continue;
+      const cost=[0,0,0,0,0,0];sq.forEach((e,i)=>{if(i>=L.free)add(cost,rc)});
+      let ok=true;{const U=cloneS(S);U.quiet=true;for(const e of sq){if(!canRoad(U,pi,e)){ok=false;break}U.er[e]=pi;U.players[pi].roads++}
+        if(!ok)continue;
+        const m=withFund(sq.map(e=>({k:'road',at:e})),cost);if(m)moves.push(m);
+        if(L.homes){const sp=houseSpots(U,pi).filter(v=>!canHouse(S,pi,v,false));
+          for(const v of bestHouseSpots(U,pi,sp,LM,1)){const c2=add(cost.slice(),HOUSE);const m2=withFund([...sq.map(e=>({k:'road',at:e})),{k:'house',at:v}],c2);if(m2)moves.push(m2)}}}
+    }
+  }
+  return moves;
+}
+function craftMoves(S,pi,id,full){
+  const p=S.players[pi],o=[],kf=foodReserve(S,pi);
+  S.market.forEach((cid,k)=>{if(!cid)return;const c=CRAFTS[cid].cost;if(has(p,c))o.push({sp:id,c:k});else if(full){const tr=fund(S,pi,c,kf);if(tr)o.push({sp:id,c:k,tr})}});
+  return o;
+}
+function raidMoves(S,pi,id,full){
+  const o=[],geo=geoOf(S.board);
+  const lead=S.players.map((q,i)=>i===pi?-1e9:scoreOf(S,i,true).total);
+  const scored=[];
+  for(let h=0;h<S.board.hexes.length;h++){if(h===S.raider)continue;const t=raidTargets(S,pi,h);
+    let harm=0,self=0;const pp=pip(S.board.hexes[h].n);
+    geo.corners[h].forEach(v=>{const b=S.bv[v];if(b<0)return;const o2=owner(b);if(o2===pi)self+=pp*(isHall(b)?2:1);else harm+=pp*(isHall(b)?2:1)*(1+.08*(lead[o2]-Math.max(...lead.filter(x=>x>-1e9))))});
+    if(!t.length){scored.push({h,v:-1,s:harm-self*1.5});continue}
+    t.forEach(v=>{const vic=S.players[v];const st=hasCraft(vic,'safe')?0:Math.min(2,sum5(vic.res));scored.push({h,v,s:harm-self*1.5+st*2+(lead[v]-Math.max(...lead))*.1})});
+  }
+  scored.sort((a,b)=>b.s-a.s);
+  scored.slice(0,full?4:1).forEach(x=>o.push({sp:id,hex:x.h,vic:x.v}));
+  return o;
+}
+function bazaarMoves(S,pi,id,full){
+  const p=S.players[pi],o=[{sp:id,bz:[]}];
+  const tg=targetCosts(S,pi);
+  const fa=feastsAhead(S,pi);const foodNeed=fa.length&&fa[0]-S.moon<=1?Math.max(0,feedNeed(p)-p.res[5]-1):0;
+  if(foodNeed>0)tg.unshift({k:'food',c:[0,0,0,0,0,feedNeed(p)]});
+  for(const t of tg.slice(0,full?8:3)){
+    const res=p.res.slice();res[5]++;const bz=[];
+    for(let g=0;g<6;g++)while(res[g]<t.c[g]){let best=-1,bs=1;for(let h=0;h<5;h++){if(h===g)continue;const spare=res[h]-t.c[h];if(spare>=2&&spare>bs){bs=spare;best=h}}if(best<0)break;res[best]-=2;res[g]++;bz.push([best,g]);if(bz.length>6)break}
+    if(bz.length)o.push({sp:id,bz});
+  }
+  return o;
+}
+function pickMoves(S,pi,id,full){
+  const d=SPACES[id],p=S.players[pi];const n=d.pick+(id==='odd'||id==='market'?(hasCraft(p,'tools')?1:0):0);
+  if(full)return PICKS[n].map(g=>({sp:id,g}));
+  // quick: fill the most nearly finished target
+  const tg=targetCosts(S,pi);let best=null,bm=99;
+  for(const t of tg){const mm=missingOf(p,t.c);if(mm.n>0&&mm.n<bm&&mm.m[5]===0){bm=mm.n;best=mm.m}}
+  const g=[];if(best){for(let x=0;x<5&&g.length<n;x++)for(let k=0;k<best[x]&&g.length<n;k++)g.push(x)}
+  while(g.length<n)g.push(2);
+  return [{sp:id,g:g.sort()}];
+}
+function spaceMoves(S,pi,id,full){
+  const d=SPACES[id];
+  if(d.build)return buildMoves(S,pi,id,full);
+  if(d.craft)return craftMoves(S,pi,id,full);
+  if(d.raid)return raidMoves(S,pi,id,full);
+  if(d.bazaar)return bazaarMoves(S,pi,id,full);
+  if(d.pick)return pickMoves(S,pi,id,full);
+  return [{sp:id}];
+}
+function genMoves(S,pi,full){
+  const o=[];for(const id of S.spaces){if(!canPlace(S,pi,id))continue;spaceMoves(S,pi,id,full).forEach(m=>o.push(m))}
+  return o;
+}
+
+/* ---- fast policy for playouts ---- */
+function quickMove(S,pi){
+  let best=null,bv=-1e9;const W=wOf(S,pi);
+  for(const id of S.spaces){if(!canPlace(S,pi,id))continue;
+    for(const m of spaceMoves(S,pi,id,false)){const T=tryMove(S,pi,m);if(!T)continue;const v=evalP(T,pi)+Math.random()*W.noise*4;if(v>bv){bv=v;best=m}}}
+  return best;
+}
+function botFeed(S,pi){
+  const p=S.players[pi],need=feedNeed(p),last=S.moon>=MOONS;let g=0;
+  while(p.res[5]<need&&g++<30){
+    const rg=eatRate(p,3),rw=eatRate(p,4),W=wOf(S,pi);
+    const opts=[];if(p.res[3]>0)opts.push({k:'eat',g:3,cost:W.gv[3]/rg});if(p.res[4]>0)opts.push({k:'eat',g:4,cost:W.gv[4]/rw});
+    for(let h=0;h<5;h++){const r=rateOf(S,pi,h);if(p.res[h]>=r)opts.push({k:'tr',g:h,cost:W.gv[h]*r})}
+    if(!opts.length)break;opts.sort((a,b)=>a.cost-b.cost);const o=opts[0];
+    if(!last&&o.cost>RULES.hardship*1.1)break;
+    if(o.k==='eat')eat(S,pi,o.g);else tradeSupply(S,pi,o.g,5);
+  }
+  if(last){ // nothing left to save goods for: eat spare grain/wool only if it covers a hardship (already done)
+  }
+  finishFeast(S,pi);
+}
+function botRaider(S,pi){
+  const m=raidMoves(S,pi,'raid',false)[0];
+  if(!m){let h=(S.raider+1)%S.board.hexes.length;raiderMove(S,pi,h,raidTargets(S,pi,h)[0]??-1);return}
+  if(!raiderMove(S,pi,m.hex,m.vic)){const h=(S.raider+1)%S.board.hexes.length;raiderMove(S,pi,h,raidTargets(S,pi,h)[0]??-1)}
+}
+function botKeep(S,pi,cards){
+  const L=MOONS-S.moon,keep=[];
+  for(const id of cards){const info=charterInfo(S,id);let pr;
+    if(info.route){const need=routeNeed(S,pi,info.route[0],info.route[1]);pr=need>=99?0:Math.max(0,1-need/(2.3*L+1))**1.3}
+    else pr=ambProb(S,pi,id,L);
+    if(charterDone(S,pi,id)||pr*(info.pts+RULES.chPen)-RULES.chPen>.4)keep.push(id)}
+  return keep;
+}
+function charterEV(S,pi,id){
+  const info=charterInfo(S,id);let pr;
+  if(info.route){const d=info.dist;pr=Math.max(.15,Math.min(.85,1.15-d*.075))}
+  else pr={kin5:.6,halls2:.55,build5:.5,craft4:.5,terr5:.55,harb2:.45,nohard:.6,road9:.45,shoal2:S.board.hexes.length>19?.45:.3}[id]||.4;
+  return pr*(info.pts+(S.opts.forgive?0:RULES.chPen))-(S.opts.forgive?0:RULES.chPen);
+}
+function botCharters(S,pi){
+  const p=S.players[pi];const ev=p.offer.map(id=>({id,v:charterEV(S,pi,id)+Math.random()*.3})).sort((a,b)=>b.v-a.v);
+  const keep=[ev[0].id,ev[1].id];if(ev[2].v>.6)keep.push(ev[2].id);
+  chooseCharters(S,pi,keep);
+}
+function setupSpotScore(S,pi,v){
+  const geo=geoOf(S.board),VH=vh(geo,S),p=S.players[pi];
+  const W=[.42,.42,.5,.46,.4,.45];let s=0;const kinds=new Set();
+  for(const x of VH[v]){s+=x.p*W[x.g]*30;kinds.add(x.g)}
+  // diversity with what we already have
+  const have=new Set();for(let u=0;u<S.bv.length;u++)if(owner(S.bv[u])===pi)VH[u].forEach(x=>have.add(x.g));
+  kinds.forEach(k=>{if(!have.has(k))s+=.6});
+  const port=geo.portOf[v];if(port!==null)s+=port===-1?.5:.6;
+  // route charters: closeness to their landmarks
+  for(const id of p.ch){if(id[0]!=='R')continue;const a=+id[1],b=+id[2];const m=S.board.marks;
+    const da=geoOf(S.board).mdist;const dv=bfsDist(geo,v);s+=Math.max(0,3-Math.min(dv[m[a]],dv[m[b]])*.45);}
+  if(p.ch.includes('shoal2')||p.ch.includes('terr5'))s+=kinds.size*.2+(VH[v].some(x=>x.g===5)?.5:0);
+  if(p.ch.includes('harb2')&&port!==null)s+=1;
+  return s;
+}
+function botSetup(S,pi){
+  const geo=geoOf(S.board);
+  const spots=setupHouseSpots(S,pi).map(v=>({v,s:setupSpotScore(S,pi,v)+Math.random()*.2})).sort((a,b)=>b.s-a.s);
+  if(wOf(S,pi).setupEval){
+    // judge the best few corners (and each road from them) by the full evaluation
+    let best=null,bv=-1e9;const D=determinize(S,pi);
+    for(const sp of spots.slice(0,8))for(const e of geo.verts[sp.v].edges){if(S.er[e]!==-1)continue;const T=cloneS(D);T.quiet=true;T.halt=true;
+      if(!placeSetup(T,pi,sp.v,e))continue;const x=evalP(T,pi)+sp.s*.15+Math.random()*.05;if(x>bv){bv=x;best={v:sp.v,e}}}
+    if(best){placeSetup(S,pi,best.v,best.e);return}
+  }
+  const v=spots[0].v;
+  // road toward the best open spot two steps away (or a landmark we need)
+  let best=null,bs=-1e9;
+  for(const e of geo.verts[v].edges){if(S.er[e]!==-1)continue;const E=geo.edges[e],w=E.a===v?E.b:E.a;let s=0;
+    for(const x of geo.verts[w].nbr){if(x===v)continue;if(free5(S,x)&&!geo.verts[v].nbr.includes(x))s=Math.max(s,setupSpotScore(S,pi,x)*.5)}
+    s+=geo.verts[w].hexes.length*.2+Math.random()*.1;
+    if(s>bs){bs=s;best=e}}
+  placeSetup(S,pi,v,best);
+}
+
+/* ---- the strong chooser ---- */
+function oppLoss(S,pi){
+  const loss={};
+  for(let oi=0;oi<S.np;oi++){
+    if(oi===pi||freeKin(S.players[oi])<=0)continue;
+    const T=cloneS(S);T.quiet=true;T.turn=oi;T.offers=[];
+    const b=evalP(T,oi),gains=[];
+    for(const id of T.spaces){if(!canPlace(T,oi,id))continue;let g=-1e9;
+      for(const m of spaceMoves(T,oi,id,false)){const U=tryMove(T,oi,m);if(U){const x=evalP(U,oi)-b;if(x>g)g=x}}
+      if(g>-1e9)gains.push({id,g})}
+    gains.sort((x,y)=>y.g-x.g);
+    if(gains.length>1){const d=gains[0].g-gains[1].g;if(d>0)loss[gains[0].id]=(loss[gains[0].id]||0)+d}
+  }
+  return loss;
+}
+function stepBot(S){
+  // advance one decision of whoever is to act (used in playouts and by the in-game runner)
+  const pi=S.turn;
+  switch(S.phase){
+    case 'charter':botCharters(S,pi);return;
+    case 'setup':botSetup(S,pi);return;
+    case 'raider':botRaider(S,pi);return;
+    case 'feast':botFeed(S,pi);return;
+    case 'work':{if(S.pend&&S.pend.pi===pi){keepCharters(S,pi,botKeep(S,pi,S.pend.cards));return}
+      const m=quickMove(S,pi);if(!m||!applyFull(S,pi,m)){S.players[pi].placed=S.players[pi].kin;nextTurn(S)}return}
+  }
+}
+function playout(S,pi,toEnd,myNext){
+  let g=0,mine=0;S.halt=!toEnd;
+  if(S.phase==='pause'){if(!toEnd)return;S.phase='work';startMoon(S)}
+  while(S.phase!=='end'&&S.phase!=='pause'&&g++<900){
+    if(!toEnd&&S.phase==='work'&&S.turn===pi&&!S.pend){if(!myNext||mine++>=1)break} // back to us: judge here (after our own next move if asked)
+    stepBot(S);
+  }
+}
+function botChoose(S0,pi,levelName){
+  // Strongest setting, as measured: with two players, look ahead through the opponent's reply and our next move;
+  // with three or more, rollouts added noise, so judge by the evaluation plus denial of rivals' best spaces.
+  const name=levelName||'strong';
+  const lv=name==='strong'?(S0.np===2?LEVEL.search:LEVEL.deny):LEVEL[name],t0=NOW();
+  const S=determinize(S0,pi);
+  const cands=genMoves(S,pi,true);
+  if(!cands.length)return null;
+  const deny=lv.deny?oppLoss(S,pi):{};
+  const W=wOf(S,pi);
+  const scored=[];
+  for(const m of cands){const T=tryMove(S,pi,m);if(!T)continue;scored.push({m,v:evalP(T,pi)+(deny[m.sp]||0)*W.deny+Math.random()*W.noise})}
+  if(!scored.length)return null;
+  scored.sort((a,b)=>b.v-a.v);
+  if(lv.K<=1||lv.R<=0||(lv.rollFrom&&S.moon<lv.rollFrom))return scored[0].m;
+  const late=S.moon>=lv.endFrom;
+  const K=late?lv.endK:lv.K,R=late?lv.endR:lv.R;
+  // the best few, at most two per space, within reach of the best
+  const top=[];const seenSp={};
+  for(const x of scored){if(top.length>=K)break;if(x.v<scored[0].v-2.5)break;const key=x.m.sp;if((seenSp[key]||0)>=2)continue;seenSp[key]=(seenSp[key]||0)+1;top.push(x)}
+  if(top.length<=1)return scored[0].m;
+  const kap=lv.kap!==undefined?lv.kap:S.np===2?1:.5;
+  const tot=top.map(()=>0);let r=0;
+  for(;r<R;r++){
+    if(r>=1&&NOW()-t0>(lv.budget||1e9))break;
+    const D=determinize(S0,pi);
+    top.forEach((x,i)=>{const T=tryMove(D,pi,x.m);if(!T){tot[i]-=99;return}
+      playout(T,pi,late,lv.myNext);
+      if(T.phase==='end'){const me=total(T,pi);let mx=-1e9;for(let q=0;q<T.np;q++)if(q!==pi)mx=Math.max(mx,total(T,q));tot[i]+=me-mx+me*.2+(T.winner===pi?1.5:0)}
+      else tot[i]+=relVal(T,pi,kap)+(deny[x.m.sp]||0)*W.deny});
+  }
+  let bi=0;
+  if(lv.blend!==undefined){const rr=tot.map(t=>t/r),mean=rr.reduce((x,y)=>x+y,0)/rr.length;const f=top.map((x,i)=>x.v+lv.blend*(rr[i]-mean));for(let i=1;i<top.length;i++)if(f[i]>f[bi])bi=i}
+  else for(let i=1;i<top.length;i++)if(tot[i]>tot[bi])bi=i;
+  if(AIDBG)AIDBG.push({moon:S.moon,pi,r,ms:Math.round(NOW()-t0),top:top.map((x,i)=>({sp:x.m.sp,v:+x.v.toFixed(2),r:+(tot[i]/r).toFixed(2)}))});
+  return top[bi].m;
+}
+/* Bots trade with each other and with people through standing offers. */
+function botOffers(S,pi){
+  const p=S.players[pi];
+  // accept offers that help us and do not hand the leader too much
+  const D=S.offers.length?determinize(S,pi):null; // judge others without peeking at their charters
+  for(let k=S.offers.length-1;k>=0;k--){const o=S.offers[k];if(!offerOk(S,o,pi))continue;
+    const T=cloneS(D);T.quiet=true;if(!acceptOffer(T,pi,k))continue;
+    const gMe=evalP(T,pi)-evalP(D,pi),gThem=evalP(T,o.by)-evalP(D,o.by);
+    const lead=scoreOf(S,o.by,true).total-Math.max(...S.players.map((q,i)=>i===o.by?-99:scoreOf(S,i,true).total));
+    if(gMe>.25&&gMe>=gThem*(lead>2?1.2:.5)-.2){acceptOffer(S,pi,k);break}}
+  // post one offer: 2 of our most spare good for 1 of what we miss for a house or hall
+  if(S.offers.some(o=>o.by===pi))return;
+  const tg=targetCosts(S,pi).filter(t=>t.k==='house'||t.k==='hall');
+  for(const t of tg){const mm=missingOf(p,t.c);if(mm.n!==1||mm.m[5])continue;const want=mm.m.indexOf(1);
+    let give=-1,sp=1;for(let g=0;g<5;g++){if(g===want)continue;const spare=p.res[g]-t.c[g];if(spare>=2&&spare>sp){sp=spare;give=g}}
+    if(give<0)continue;const gv=[0,0,0,0,0,0],gt=[0,0,0,0,0,0];gv[give]=sp>=4?2:1;gt[want]=1;
+    if(gv[give]===1&&rateOf(S,pi,give)<=2)continue;
+    postOffer(S,pi,gv,gt);return}
+}
+
+</script>
+<script>
+/* ================= Strand — app shell, screens and input ================= */
+let G=null,mode='local';
+const ui={view:'board',sel:null,act:null,sheet:null,toast:null,busy:false,botTimer:null,screen:'home',
+  setup:{lp:1,lb:3,op:2,ob:1},names:['You','Player 2','Player 3','Player 4','Player 5'],targets:[],hl:{},hlSeen:{},newV:new Set(),newE:new Set(),newH:new Set(),lit:new Set(),
+  keep:[],pick:[],bz:[],bzGive:0,bzGet:3,offerGive:[0,0,0,0,0,0],offerGet:[0,0,0,0,0,0],setupSel:null,rsel:null,cover:-1,shown:-1,recapOpen:true,lastFx:0,peek:null,tradeTab:'supply'};
+const net={ready:false,off:false,db:null,me:null,ref:null,doc:null,rev:0,gid:null,dirty:false,writing:false,canWrite:null,watch:false,driver:false,pending:null,lastMine:false,repairT:null,lastRev:-1};
+const seen={};
+const PREF_KEY='strand-prefs',SAVE_KEY='strand-save';
+const prefs={sound:false,haptic:true,theme:'auto',confirm:true,tips:true,calm:false,forgive:false,open:false,played:0};
+try{Object.assign(prefs,JSON.parse(localStorage.getItem(PREF_KEY)||'{}'))}catch(e){}
+function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify(prefs))}catch(e){}}
+function applyTheme(){try{if(prefs.theme==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',prefs.theme)}catch(e){}}
+applyTheme();
+function save(){if(mode!=='local'||!G)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(G))}catch(e){}}
+function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(!s)return null;const g=JSON.parse(s);return g&&g.v===2&&g.phase!=='end'?g:null}catch(e){return null}}
+function clearSave(){try{localStorage.removeItem(SAVE_KEY)}catch(e){}}
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ic=(n,cls)=>`<svg class="ic ${cls||''}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+const resIc=g=>ic(RES[g]);
+const pcv=i=>`--pc:var(--p${i});--pk:var(--pk${i})`;
+function costHTML(c){let o='';for(let g=0;g<6;g++)if(c[g])o+=`<span class="res" title="${RN[g]}">${c[g]}${resIc(g)}</span>`;return o||'<span class="sub">free</span>'}
+
+/* ---------- sound + haptics ---------- */
+let AC=null;
+function tone(f,d,type,vol,slide){
+  if(!prefs.sound)return;
+  try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();
+    o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(slide,t+d);
+    g.gain.setValueAtTime(vol||.08,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+d+.02)}catch(e){}
+}
+const SFX={tap:()=>tone(660,.05,'triangle',.04),place:()=>{tone(220,.09,'triangle',.09);tone(330,.07,'sine',.05)},build:()=>{tone(180,.12,'square',.04);setTimeout(()=>tone(270,.1,'triangle',.06),60)},
+  tide:()=>tone(300,.4,'sine',.05,120),turn:()=>{tone(784,.12,'sine',.07);setTimeout(()=>tone(1046,.16,'sine',.06),110)},feast:()=>{tone(523,.15,'sine',.06);setTimeout(()=>tone(659,.15,'sine',.06),120);setTimeout(()=>tone(784,.2,'sine',.06),240)},bad:()=>tone(150,.15,'sawtooth',.04)};
+function buzz(ms){if(!prefs.haptic)return;try{if(navigator.vibrate)navigator.vibrate(ms)}catch(e){}}
+
+/* ---------- whose turn ---------- */
+const actorIdx=()=>!G?-1:G.pend?G.pend.pi:G.turn;
+const actor=()=>G.players[actorIdx()];
+const seat=()=>net.doc&&net.doc.seats?net.doc.seats.indexOf(net.me):-1;
+function mine(){if(!G||G.phase==='end'||G.phase==='pause')return false;const i=actorIdx();if(G.players[i].bot)return false;if(mode==='local')return true;return seat()===i}
+function meIdx(){
+  if(!G)return 0;
+  if(mode==='online'&&seat()>=0)return seat();
+  if(mine())return actorIdx();
+  if(ui.lastHuman>=0&&ui.lastHuman<G.np&&!G.players[ui.lastHuman].bot)return ui.lastHuman;
+  const h=G.players.findIndex(p=>!p.bot);return h<0?0:h;
+}
+const humans=()=>G.players.filter(p=>!p.bot).length;
+function flash(t){ui.toast=t;clearTimeout(ui.toastT);ui.toastT=setTimeout(()=>{ui.toast=null;render()},2600)}
+
+/* ---------- starting games ---------- */
+function startLocal(specs){
+  mode='local';G=newGame(shuffle(specs),{calm:prefs.calm,forgive:prefs.forgive,open:prefs.open});
+  ui.screen='game';ui.view='island';ui.sheet=null;ui.act=null;ui.sel=null;ui.cover=-1;ui.shown=-1;ui.lastHuman=-1;for(const k in seen)delete seen[k];
+  prefs.played++;savePrefs();save();render();runBots();
+}
+function localSpecs(){
+  const S=ui.setup,specs=[];
+  for(let i=0;i<S.lp;i++)specs.push({name:(ui.names[i]||'').trim()||(S.lp===1?'You':'Player '+(i+1))});
+  shuffle(BOTNAMES.slice()).slice(0,S.lb).forEach(n=>specs.push({name:n,bot:true}));
+  return specs;
+}
+
+/* ---------- undo: one snapshot per human turn, dropped when hidden information comes out ---------- */
+function snapTurn(){
+  const pi=actorIdx();
+  if(G.undo&&G.undo.by===pi&&G.undo.open)return;
+  G.undo={by:pi,open:true,hid:G.hid,label:'',snap:JSON.stringify(Object.assign({},G,{undo:null}))};
+}
+function closeTurn(label){if(G.undo&&G.undo.open){G.undo.open=false;G.undo.label=label}}
+function canUndo(){
+  if(!G||!G.undo||ui.busy||ui.act||G.phase==='end')return false;
+  if(G.hid!==G.undo.hid)return false;
+  const me=mode==='online'?seat():G.undo.by;if(G.undo.by!==me)return false;
+  return !G.players[G.undo.by].bot;
+}
+function undo(){
+  if(!canUndo())return;const u=G.undo;
+  G=JSON.parse(u.snap);G.undo=null;ui.act=null;ui.sel=null;ui.setupSel=null;ui.rsel=null;ui.sheet=null;
+  flash('Took that back.');afterChange(true);
+}
+
+/* ---------- applying a human move ---------- */
+function afterHuman(label){
+  const pi=ui.actingAs;closeTurn(label);ui.lastHuman=pi;seen[pi]=G.seq;ui.recapOpen=false;
+  afterChange(true);
+}
+function afterChange(byMe){
+  if(byMe&&mode==='online'){net.driver=true}
+  fxScan();save();if(byMe)commit();render();runBots();
+}
+function doCommit(m,label){
+  const pi=actorIdx();ui.actingAs=pi;
+  const T=cloneS(G);
+  if(!applyMove(T,pi,m)){SFX.bad();flash("That move isn't allowed right now.");return false}
+  snapTurn();T.undo=G.undo;G=T;ui.act=null;ui.sel=null;
+  SFX.place();buzz(10);afterHuman(label||SPACES[m.sp].name);return true;
+}
+
+/* ---------- computer turns: one at a time with a short pause ---------- */
+function botsToRun(){if(!G||G.phase==='end'||G.phase==='pause')return false;if(!actor().bot)return false;return mode==='local'||net.driver}
+function botStep(){
+  const pi=actorIdx();
+  if(G.phase==='work'&&!G.pend){
+    botOffers(G,pi);
+    let m=null;try{m=botChoose(G,pi,'strong')}catch(e){console.error(e)}
+    if(m){const T=cloneS(G);if(applyFull(T,pi,m)){G=T;return}}
+    const q=quickMove(determinize(G,pi),pi);if(q){const T=cloneS(G);if(applyFull(T,pi,q)){G=T;return}}
+    G.players[pi].placed=G.players[pi].kin;nextTurn(G);
+  }else stepBot(G);
+}
+function runBots(){
+  if(ui.botTimer)return;
+  if(!botsToRun()){if(ui.busy){ui.busy=false;render()}return}
+  ui.busy=true;
+  const delay=ui.fast?1:G.phase==='work'?620:G.phase==='setup'?520:380;
+  ui.botTimer=setTimeout(()=>{
+    ui.botTimer=null;
+    if(!botsToRun()){ui.busy=false;render();return}
+    try{botStep()}catch(e){console.error(e);try{stepBot(G)}catch(e2){}}
+    ui.busy=botsToRun();
+    fxScan();save();if(mode==='online')commit();render();runBots();
+  },delay);
+  render();
+}
+
+/* ---------- effects: highlight what just happened ---------- */
+function fxScan(){
+  if(!G)return;const from=ui.lastFx;ui.lastFx=G.seq;if(from>=G.seq)return;
+  const ents=G.log.filter(l=>l.s>from);
+  let tide=false,feast=false,built=false;
+  ents.forEach(l=>{
+    if(l.fx){if(l.fx.sp)ui.hl[l.fx.sp]=Date.now();(l.fx.v||[]).forEach(v=>{ui.newV.add(v);built=true});(l.fx.e||[]).forEach(e=>{ui.newE.add(e);built=true});(l.fx.h||[]).forEach(h=>ui.newH.add(h))}
+    if(l.tides){tide=true;ui.lit=new Set();G.board.hexes.forEach((h,i)=>{if(l.tides.includes(h.n)&&h.n!==7)ui.lit.add(i)});ui.tideGot=l.got}
+    if(l.feast)feast=true;
+  });
+  if(tide){SFX.tide();ui.tideAt=Date.now();setTimeout(()=>{ui.lit=new Set();render()},2200)}
+  if(built)SFX.build();if(feast)SFX.feast();
+  setTimeout(()=>{ui.newV.clear();ui.newE.clear();ui.newH.clear()},900);
+}
+
+/* ---------- human input: action board ---------- */
+function actKind(id){const d=SPACES[id];if(d.build)return 'build';if(d.craft)return 'craft';if(d.raid)return 'raid';if(d.bazaar)return 'bazaar';if(d.pick)return 'pick';return 'none'}
+function pickSpace(id){
+  if(!mine()||G.phase!=='work'||G.pend||ui.act)return;
+  if(!canPlace(G,G.turn,id)){const why=whyNot(id);if(why)flash(why);SFX.bad();return}
+  SFX.tap();
+  if(prefs.confirm){ui.sel=ui.sel===id?null:id;render()}else startAct(id);
+}
+function whyNot(id){
+  const s=G.sp[id],p=G.players[G.turn];if(!s)return '';
+  if(s.occ>=0)return `${G.players[s.occ].name} is already on ${SPACES[id].name}.`;
+  const d=SPACES[id];if(d.grow===1&&beds(p)<=p.kin)return 'Kinfolk needs a free bed. Build a house or hall first.';
+  if(d.grow&&p.kin>=MAXKIN)return 'Your family is full (5).';
+  return '';
+}
+function startAct(id){
+  const k=actKind(id),pi=G.turn,p=G.players[pi];ui.sel=null;
+  if(k==='none'){doCommit({sp:id});return}
+  ui.act={sp:id,kind:k,b:[],g:[],bz:[],c:null,hex:null,vic:null};
+  if(k==='build'){ui.view='island'}
+  else if(k==='craft'){ui.view='market';if(!G.market.some(c=>c&&has(p,CRAFTS[c].cost)))flash('You cannot pay for any craft yet. Trade first, or cancel.')}
+  else if(k==='raid'){ui.view='island'}
+  else if(k==='pick'){ui.sheet='pick'}
+  else if(k==='bazaar'){ui.sheet='bazaar';ui.bzGive=p.res.slice(0,5).indexOf(Math.max(...p.res.slice(0,5)));ui.bzGet=ui.bzGive===3?2:3}
+  render();
+}
+function cancelAct(){ui.act=null;ui.sheet=null;ui.view='board';render()}
+function pickN(){const a=ui.act,p=G.players[G.turn];return SPACES[a.sp].pick+(a.sp==='odd'||a.sp==='market'?(hasCraft(p,'tools')?1:0):0)}
+
+/* build steps on the island */
+function buildState(){
+  const a=ui.act,pi=G.turn,T=cloneS(G);T.quiet=true;
+  const ok=applyMove(T,pi,{sp:a.sp,b:a.b,preview:true});
+  if(!ok)return null;
+  const L=buildLimits(G,pi,a.sp),p=T.players[pi];
+  const roads=a.b.filter(b=>b.k==='road').length,homes=a.b.filter(b=>b.k!=='road').length;
+  const nextRoadFree=roads<L.free;
+  const rc=nextRoadFree?[0,0,0,0,0,0]:roadCost(p,L.ship);
+  const canR=roads<L.roads&&has(p,rc)&&p.roads<15;
+  const limH=L.halls||L.homes;
+  const canHo=!L.halls&&homes<L.homes&&has(p,HOUSE)&&p.houses<5;
+  const hc=hallCost(p,L.hallDisc);const canHa=homes<limH&&has(p,hc)&&p.halls<4;
+  const t=[];
+  if(canR)roadSpots(T,pi).forEach(e=>t.push({k:'e',i:e}));
+  if(canHo)houseSpots(T,pi).forEach(v=>t.push({k:'v',i:v,b:'house'}));
+  if(canHa)for(let v=0;v<T.bv.length;v++)if(T.bv[v]===pi*2)t.push({k:'v',i:v,b:'hall'});
+  return {T,L,roads,homes,rc,hc,targets:t,nextRoadFree,canR,canHo,canHa};
+}
+function onTarget(t){
+  if(!G)return;
+  // setup placement
+  if(G.phase==='setup'&&mine()){
+    const pi=G.turn;
+    if(t.k==='v'){ui.setupSel={v:t.i,e:null}}
+    else if(t.k==='e'&&ui.setupSel)ui.setupSel.e=t.i;
+    SFX.tap();render();return;
+  }
+  if(G.phase==='raider'&&mine()){if(t.k==='h'){const vs=raidTargets(G,G.turn,t.i);ui.rsel={hex:t.i,vic:vs.length===1?vs[0]:vs.length?null:-1};SFX.tap();render()}return}
+  if(!ui.act)return;
+  const a=ui.act;
+  if(a.kind==='build'){
+    const last=a.b[a.b.length-1];
+    if(last&&((t.k==='e'&&last.k==='road'&&last.at===t.i)||(t.k==='v'&&last.k!=='road'&&last.at===t.i))){a.b.pop();SFX.tap();render();return}
+    if(t.k==='e')a.b.push({k:'road',at:t.i});else if(t.k==='v')a.b.push({k:t.b,at:t.i});
+    if(!buildState()){a.b.pop();SFX.bad();flash("You can't build there.")}else SFX.build();
+    render();return;
+  }
+  if(a.kind==='raid'&&t.k==='h'){const vs=raidTargets(G,G.turn,t.i);a.hex=t.i;a.vic=vs.length===1?vs[0]:vs.length?null:-1;SFX.tap();render()}
+}
+
+/* ---------- free trading on your turn ---------- */
+function freeTrade(give,get){
+  if(!mine())return;const pi=actorIdx();
+  if(!canFree(G,pi)){flash('You can trade only on your turn, before you place.');return}
+  snapTurn();if(tradeSupply(G,pi,give,get)){SFX.tap();afterChange(true)}else{SFX.bad();flash(`You need ${rateOf(G,pi,give)} ${RES[give]} for that.`)}
+}
+function doPostOffer(){
+  const pi=actorIdx();snapTurn();
+  if(postOffer(G,pi,ui.offerGive,ui.offerGet)){ui.offerGive=[0,0,0,0,0,0];ui.offerGet=[0,0,0,0,0,0];flash('Offer posted. Others can take it on their turns until your next turn.');afterChange(true)}
+  else{SFX.bad();flash('An offer needs goods you have on one side, and something different on the other.')}
+}
+function doAccept(k){
+  const pi=actorIdx();snapTurn();
+  if(acceptOffer(G,pi,k)){SFX.place();afterChange(true)}else{SFX.bad();flash('You cannot take that offer now.')}
+}
+
+/* ---------- feast ---------- */
+function feastEat(g){const pi=actorIdx();snapTurn();if(eat(G,pi,g)){SFX.tap();afterChange(true)}}
+function feastDone(){const pi=actorIdx();ui.actingAs=pi;snapTurn();if(finishFeast(G,pi)){ui.sheet=null;SFX.feast();afterHuman('the feast')}}
+
+/* ---------- tap routing ---------- */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-do]');if(!b||b.disabled)return;const d=b.dataset;
+  if(d.do==='scrim'&&e.target!==b)return;
+  const busyOk=['view','rules','close','scrim','log','menu','settings','peek','pref','theme','recapX','home','newgame','reallyNew','undo','tip','cover'];
+  if(ui.busy&&!busyOk.includes(d.do)&&ui.screen==='game'&&!mine())return;
+  switch(d.do){
+    case 'island':islandTap(e,b);break;
+    case 'view':ui.view=d.v;if(ui.act&&ui.act.kind!=='build'&&ui.act.kind!=='raid'&&ui.act.kind!=='craft')ui.act=null;render();break;
+    case 'space':pickSpace(d.id);break;
+    case 'place':if(ui.sel)startAct(ui.sel);break;
+    case 'unsel':ui.sel=null;render();break;
+    case 'cancelAct':cancelAct();break;
+    case 'stepBack':if(ui.act&&ui.act.b.length){ui.act.b.pop();render()}break;
+    case 'doneBuild':{const a=ui.act;if(!a)break;if(!a.b.length){flash('Tap a glowing spot to build, or Cancel to pick another action.');break}doCommit({sp:a.sp,b:a.b.slice()});ui.view='island';break}
+    case 'craft':{if(!ui.act||ui.act.kind!=='craft'){ui.peek={craft:+d.k};ui.sheet='craftInfo';render();break}
+      const cid=G.market[+d.k],p=G.players[G.turn];if(!cid)break;if(!has(p,CRAFTS[cid].cost)){SFX.bad();flash(`You need ${fmt(CRAFTS[cid].cost)}.`);break}
+      ui.act.c=+d.k;if(!prefs.confirm){doCommit({sp:ui.act.sp,c:ui.act.c},'Workshop');ui.view='board'}else render();break}
+    case 'buy':if(ui.act&&ui.act.c!==null){const sp=ui.act.sp,c=ui.act.c;doCommit({sp,c});ui.view='board'}break;
+    case 'vic':if(ui.act)ui.act.vic=+d.v;else if(ui.rsel)ui.rsel.vic=+d.v;render();break;
+    case 'raid':if(ui.act&&ui.act.hex!==null&&ui.act.vic!==null){doCommit({sp:ui.act.sp,hex:ui.act.hex,vic:ui.act.vic});ui.view='board'}break;
+    case 'raider':{if(!ui.rsel||ui.rsel.vic===null)break;const pi=actorIdx();ui.actingAs=pi;snapTurn();if(raiderMove(G,pi,ui.rsel.hex,ui.rsel.vic)){ui.rsel=null;afterHuman('the raider')}break}
+    case 'pickg':{const n=pickN(),g=+d.g;if(ui.act.g.length<n)ui.act.g.push(g);else{ui.act.g.shift();ui.act.g.push(g)}SFX.tap();render();break}
+    case 'pickClear':ui.act.g=[];render();break;
+    case 'pickDone':{const a=ui.act;if(a.g.length!==pickN()){flash(`Choose ${pickN()} goods.`);break}ui.sheet=null;doCommit({sp:a.sp,g:a.g.slice().sort()});break}
+    case 'bzg':ui.bzGive=+d.g;render();break;
+    case 'bzt':ui.bzGet=+d.g;render();break;
+    case 'bzAdd':{const a=ui.act;const p=G.players[G.turn];const r=p.res.slice();r[5]++;a.bz.forEach(([x,y])=>{r[x]-=2;r[y]++});if(ui.bzGive===ui.bzGet||r[ui.bzGive]<2){SFX.bad();flash('You need 2 of what you give, and a different good back.');break}a.bz.push([ui.bzGive,ui.bzGet]);SFX.tap();render();break}
+    case 'bzPop':ui.act.bz.pop();render();break;
+    case 'bzDone':{const a=ui.act;ui.sheet=null;doCommit({sp:a.sp,bz:a.bz.slice()});break}
+    case 'trade':ui.sheet='trade';render();break;
+    case 'ttab':ui.tradeTab=d.v;render();break;
+    case 'tsup':freeTrade(+d.g,+d.h);break;
+    case 'tg':ui.tradeGive=+d.g;render();break;
+    case 'ostep':{const arr=d.side==='give'?ui.offerGive:ui.offerGet,g=+d.g;arr[g]=Math.max(0,Math.min(5,arr[g]+(+d.n)));render();break}
+    case 'opost':doPostOffer();break;
+    case 'oaccept':doAccept(+d.k);break;
+    case 'feast':ui.sheet='feast';render();break;
+    case 'eat':feastEat(+d.g);break;
+    case 'ftrade':freeTrade(+d.g,5);break;
+    case 'feed':feastDone();break;
+    case 'ckeep':{const id=d.id;const i=ui.keep.indexOf(id);if(i>=0)ui.keep.splice(i,1);else ui.keep.push(id);SFX.tap();render();break}
+    case 'charters':ui.sheet='charters';render();break;
+    case 'ckeepDone':{const pi=actorIdx();ui.actingAs=pi;if(G.phase==='charter'){if(chooseCharters(G,pi,ui.keep.slice())){ui.keep=[];ui.sheet=null;ui.lastHuman=pi;afterChange(true)}else flash('Keep 2 or 3 charters.')}
+      else if(G.pend){if(keepCharters(G,pi,ui.keep.slice())){ui.keep=[];ui.sheet=null;afterHuman('charters')}}break}
+    case 'setupPlace':{const s=ui.setupSel;if(!s||s.e===null)break;const pi=actorIdx();ui.actingAs=pi;snapTurn();if(placeSetup(G,pi,s.v,s.e)){ui.setupSel=null;afterHuman('your landing')}break}
+    case 'setupClear':ui.setupSel=null;render();break;
+    case 'undo':undo();break;
+    case 'menu':ui.sheet='menu';render();break;
+    case 'rules':ui.sheet='rules';render();break;
+    case 'log':ui.sheet='log';render();break;
+    case 'settings':ui.sheet='settings';render();break;
+    case 'peek':ui.peek={p:+d.p};ui.sheet='player';render();break;
+    case 'close':case 'scrim':if(ui.act&&(ui.sheet==='pick'||ui.sheet==='bazaar')){cancelAct();break}ui.sheet=null;ui.peek=null;render();break;
+    case 'reopen':if(ui.act)ui.sheet=ui.act.kind;render();break;
+    case 'recapX':ui.recapOpen=false;if(G)seen[meIdx()]=G.seq;render();break;
+    case 'pref':{const k=d.k;prefs[k]=!prefs[k];savePrefs();if(k==='sound'&&prefs.sound)tone(660,.08,'sine',.06);render();break}
+    case 'theme':prefs.theme=d.v;savePrefs();applyTheme();render();break;
+    case 'cover':ui.cover=-1;ui.shown=actorIdx();render();break;
+    // home + setup
+    case 'go':ui.screen=d.s;render();break;
+    case 'setupN':{const S=ui.setup;S[d.k]=+d.v;if(S.lp+S.lb>5)S.lb=5-S.lp;if(S.lp+S.lb<2)S.lb=2-S.lp;if(S.op+S.ob>5)S.ob=5-S.op;render();break}
+    case 'startLocal':readNames();startLocal(localSpecs());break;
+    case 'continue':{const g=loadSave();if(g){G=g;mode='local';ui.screen='game';ui.view='board';ui.lastFx=G.seq;render();runBots()}break}
+    case 'home':if(mode==='local'){save()}G=mode==='online'?G:null;ui.screen='home';ui.sheet=null;ui.act=null;if(mode==='online'){mode='local';G=null;net.watch=false}render();break;
+    case 'newgame':ui.sheet='confirmNew';render();break;
+    case 'reallyNew':ui.sheet=null;if(mode==='online')endOnline();else clearSave();G=null;mode='local';ui.act=null;ui.screen='home';render();break;
+    case 'again':{const specs=G.players.map(p=>({name:p.name,bot:p.bot}));if(mode==='online'){endOnline();G=null;mode='local';ui.screen='online';render();break}startLocal(specs);break}
+    case 'host':hostGame();break;
+    case 'join':joinGame();break;
+    case 'cancelHost':endOnline();break;
+    case 'watch':net.watch=true;applyDoc(net.doc);render();break;
+    case 'handoff':ui.peek={hand:+d.p};ui.sheet='handoff';render();break;
+    case 'reallyHand':handToComputer(+d.p);break;
+    case 'retake':takeSeatBack();break;
+    case 'tip':prefs.tips=!prefs.tips;savePrefs();render();break;
+  }
+});
+function readNames(){for(let i=0;i<5;i++){const el=document.getElementById('nm'+i);if(el)ui.names[i]=el.value}}
+document.addEventListener('input',e=>{const t=e.target;if(t.id&&t.id.startsWith('nm'))ui.names[+t.id.slice(2)]=t.value});
+function islandTap(e,svg){
+  if(!ui.targets.length)return;
+  const pt=svg.createSVGPoint?svg.createSVGPoint():null;let x,y;
+  try{pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(svg.getScreenCTM().inverse());x=q.x;y=q.y}catch(err){return}
+  let best=null,bd=1e9;
+  for(const t of ui.targets){const d=Math.hypot(t.x-x,t.y-y)-(t.k==='h'?14:0);if(d<bd){bd=d;best=t}}
+  if(best&&bd<(best.k==='h'?30:26))onTarget(best);
+}
+
+/* ================= Strand — drawing ================= */
+const HS=40;
+const TERR_GLYPH=['wood','clay','stone','grain','wool','food',null];
+const HOUSE_P='M-7.5,7 L-7.5,-2 L0,-9.5 L7.5,-2 L7.5,7 Z';
+const HALL_P='M-11,8 L-11,-1.5 L-5.5,-7 L0,-2 L0,-4.5 L5.5,-10.5 L11,-4.5 L11,8 Z';
+const hexPts=(geo,i)=>geo.corners[i].map(v=>`${(geo.verts[v].x*HS).toFixed(1)},${(geo.verts[v].y*HS).toFixed(1)}`).join(' ');
+function islandSVG(o){
+  o=o||{};
+  const geo=geoOf(G.board),B=G.board,pad=o.mini?30:34;
+  const W=geo.w*HS+pad*2,H=geo.h*HS+pad*2;
+  const me=meIdx(),myMarks=new Set();
+  if(!o.mini){G.players[me].ch.forEach(id=>{if(id[0]==='R'){myMarks.add(+id[1]);myMarks.add(+id[2])}})}
+  if(o.marks)o.marks.forEach(m=>myMarks.add(m));
+  let s=`<svg class="island" viewBox="${(-W/2).toFixed(0)} ${(-H/2).toFixed(0)} ${W.toFixed(0)} ${H.toFixed(0)}" ${o.mini?'':'data-do="island"'} role="img" aria-label="The island">`;
+  // sea halo and foam
+  s+='<g>';B.hexes.forEach((h,i)=>{const c=geo.hc[i];s+=`<circle cx="${(c.x*HS).toFixed(1)}" cy="${(c.y*HS).toFixed(1)}" r="${HS*1.42}" class="sea"/>`});s+='</g>';
+  s+='<g opacity=".55">';B.hexes.forEach((h,i)=>{const c=geo.hc[i];s+=`<circle cx="${(c.x*HS).toFixed(1)}" cy="${(c.y*HS).toFixed(1)}" r="${HS*1.12}" fill="var(--foam)"/>`});s+='</g>';
+  // harbors
+  if(!o.mini)B.ports.forEach(pt=>{const e=geo.edges[pt.e],a=geo.verts[e.a],b=geo.verts[e.b];const len=Math.hypot(e.mx,e.my)||1;const px=(e.mx+e.mx/len*.62)*HS,py=(e.my+e.my/len*.62)*HS;
+    s+=`<g class="port"><line x1="${a.x*HS}" y1="${a.y*HS}" x2="${px}" y2="${py}"/><line x1="${b.x*HS}" y1="${b.y*HS}" x2="${px}" y2="${py}"/><circle cx="${px}" cy="${py}" r="12"/>`;
+    if(pt.g<0)s+=`<text x="${px}" y="${py}">3:1</text>`;else s+=`<use href="#i-${RES[pt.g]}" x="${px-7}" y="${py-9}" width="14" height="14" style="color:var(--ink)"/><text x="${px}" y="${py+7}" style="font-size:7px">2:1</text>`;
+    s+='</g>'});
+  // hexes
+  B.hexes.forEach((h,i)=>{
+    const c=geo.hc[i],cx=c.x*HS,cy=c.y*HS,t=TERR[h.t];
+    const lit=ui.lit.has(i),tgt=o.hexT&&o.hexT.has(i);
+    s+=`<g class="${lit?'lit':''}"><polygon class="hex hx-${t.id}" points="${hexPts(geo,i)}"/>`;
+    const gl=TERR_GLYPH[h.t];
+    if(gl)s+=`<use href="#i-${gl}" class="glyph" x="${cx-9}" y="${cy-HS*.72}" width="18" height="18"/>`;
+    else s+=`<g class="glyph" opacity=".5"><circle cx="${cx-8}" cy="${cy-14}" r="2"/><circle cx="${cx+6}" cy="${cy-18}" r="1.5"/><circle cx="${cx+3}" cy="${cy-9}" r="1.8"/></g>`;
+    if(h.n){const hot=pip(h.n)===5;s+=`<circle class="tok" cx="${cx}" cy="${cy+3}" r="${o.mini?11:13}"/><text class="num ${hot?'hot':''}" x="${cx}" y="${cy+1}">${h.n}</text>`;
+      if(!o.mini){const n=pip(h.n);for(let k=0;k<n;k++)s+=`<circle class="pips ${hot?'hot':''}" cx="${cx+(k-(n-1)/2)*3.2}" cy="${cy+10.5}" r="1.1"/>`}}
+    if(tgt)s+=`<polygon class="tgth" points="${hexPts(geo,i)}"/>`;
+    s+='</g>';
+  });
+  // roads
+  G.er.forEach((o2,e)=>{if(o2<0)return;const E=geo.edges[e],a=geo.verts[E.a],b=geo.verts[E.b];
+    const x1=(a.x*.82+b.x*.18)*HS,y1=(a.y*.82+b.y*.18)*HS,x2=(b.x*.82+a.x*.18)*HS,y2=(b.y*.82+a.y*.18)*HS;const nw=ui.newE.has(e);
+    s+=`<line class="roadk ${nw?'newroad':''}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><line class="road ${nw?'newroad':''}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--p${o2})"/>`});
+  if(o.ghostE)o.ghostE.forEach(e=>{const E=geo.edges[e],a=geo.verts[E.a],b=geo.verts[E.b];s+=`<line class="roadk ghost" x1="${(a.x*.82+b.x*.18)*HS}" y1="${(a.y*.82+b.y*.18)*HS}" x2="${(b.x*.82+a.x*.18)*HS}" y2="${(b.y*.82+a.y*.18)*HS}"/><line class="road ghost newroad" x1="${(a.x*.82+b.x*.18)*HS}" y1="${(a.y*.82+b.y*.18)*HS}" x2="${(b.x*.82+a.x*.18)*HS}" y2="${(b.y*.82+a.y*.18)*HS}" stroke="var(--p${o.ghostP})"/>`});
+  // landmarks
+  B.marks.forEach((v,i)=>{const p=geo.verts[v];const len=Math.hypot(p.x,p.y)||1;const x=(p.x+p.x/len*.42)*HS,y=(p.y+p.y/len*.42)*HS;
+    s+=`<g class="mk ${myMarks.has(i)?'mine':''}"><line x1="${p.x*HS}" y1="${p.y*HS}" x2="${x}" y2="${y}" stroke="var(--ink)" stroke-width="1.5"/><circle cx="${x}" cy="${y}" r="${o.mini?8:9.5}"/><text x="${x}" y="${y}">${MARKS[i][0]}</text></g>`});
+  // buildings
+  const drawB=(v,b,ghost)=>{const p=geo.verts[v],x=p.x*HS,y=p.y*HS,ow=owner(b),hall=isHall(b),nw=ui.newV.has(v);
+    return `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)})"><path class="bld ${nw||ghost?'new':''} ${ghost?'ghost':''}" d="${hall?HALL_P:HOUSE_P}" fill="var(--p${ow})" stroke="var(--pk${ow})"/></g>`};
+  G.bv.forEach((b,v)=>{if(b<0)return;if(o.ghostV&&o.ghostV.has(v))return;s+=drawB(v,b)});
+  if(o.ghostV)o.ghostV.forEach((b,v)=>{s+=drawB(v,b,true)});
+  // raider
+  {const c=geo.hc[G.raider],x=c.x*HS,y=c.y*HS-HS*.5;const nw=ui.newH.has(G.raider);
+    s+=`<g transform="translate(${x},${y})"><g class="${nw?'raider':''}"><path d="M-13,1 Q0,9 13,1 L10,-1 L-10,-1 Z" fill="#1b1b22" stroke="#fff" stroke-width="1"/><path d="M0,-1 L0,-15 M0,-14 L8,-6 L0,-5" stroke="#1b1b22" stroke-width="2" fill="#c33"/></g></g>`}
+  // targets
+  if(o.targets){o.targets.forEach(t=>{
+    if(t.k==='v'){const p=geo.verts[t.i];s+=`<circle class="tgt" cx="${p.x*HS}" cy="${p.y*HS}" r="${t.b==='hall'?11:8}"/>`}
+    else if(t.k==='e'){const E=geo.edges[t.i],a=geo.verts[E.a],b=geo.verts[E.b];s+=`<line class="tgtl" x1="${(a.x*.8+b.x*.2)*HS}" y1="${(a.y*.8+b.y*.2)*HS}" x2="${(b.x*.8+a.x*.2)*HS}" y2="${(b.y*.8+a.y*.2)*HS}"/>`}
+  })}
+  s+='</svg>';
+  return s;
+}
+function targetCoords(list){
+  const geo=geoOf(G.board);
+  return list.map(t=>{if(t.k==='v'){const p=geo.verts[t.i];return Object.assign({x:p.x*HS,y:p.y*HS},t)}
+    if(t.k==='e'){const E=geo.edges[t.i];return Object.assign({x:E.mx*HS,y:E.my*HS},t)}
+    const c=geo.hc[t.i];return Object.assign({x:c.x*HS,y:c.y*HS},t)});
+}
+
+/* ---------- island view ---------- */
+function islandView(){
+  const o={};ui.targets=[];
+  const pi=actorIdx();
+  if(mine()&&G.phase==='setup'){
+    const s=ui.setupSel;
+    if(!s){o.targets=setupHouseSpots(G,pi).map(v=>({k:'v',i:v,b:'house'}))}
+    else{o.ghostV=new Map([[s.v,pi*2]]);const geo=geoOf(G.board);
+      if(s.e===null)o.targets=geo.verts[s.v].edges.filter(e=>G.er[e]===-1).map(e=>({k:'e',i:e}));
+      else{o.ghostE=[s.e];o.ghostP=pi}
+      o.targets=(o.targets||[]).concat(s.e===null?[]:[]);
+      // tapping another corner moves the house
+      if(s.e===null)setupHouseSpots(G,pi).forEach(v=>{if(v!==s.v)o.targets.push({k:'v',i:v,b:'house',faint:1})});
+    }
+  }else if(mine()&&G.phase==='raider'){
+    o.hexT=new Set();G.board.hexes.forEach((h,i)=>{if(i!==G.raider)o.hexT.add(i)});
+    ui.targets=targetCoords([...o.hexT].map(i=>({k:'h',i})));
+  }else if(ui.act&&ui.act.kind==='build'){
+    const st=buildState();
+    if(st){o.targets=st.targets;
+      o.ghostV=new Map();o.ghostE=[];o.ghostP=pi;ui.act.b.forEach(b=>{if(b.k==='road')o.ghostE.push(b.at);else o.ghostV.set(b.at,pi*2+(b.k==='hall'?1:0))})}
+  }else if(ui.act&&ui.act.kind==='raid'){
+    o.hexT=new Set();G.board.hexes.forEach((h,i)=>{if(i!==G.raider)o.hexT.add(i)});
+    ui.targets=targetCoords([...o.hexT].map(i=>({k:'h',i})));
+  }
+  if(o.targets)ui.targets=targetCoords(o.targets.filter(t=>!t.faint)).concat(targetCoords(o.targets.filter(t=>t.faint)));
+  if(o.targets)o.targets=o.targets.filter(t=>!t.faint);
+  const rsel=(ui.act&&ui.act.kind==='raid')?ui.act.hex:(ui.rsel?ui.rsel.hex:null);
+  if(rsel!==null&&rsel!==undefined&&o.hexT){o.hexT=new Set([rsel])}
+  // tide strip
+  let tides='';
+  if(G.tideNow&&G.tideNow.length&&G.moon>0){
+    const me=meIdx(),got=G.lastTides&&G.lastTides.got?G.lastTides.got[me]:null;
+    const fresh=ui.tideAt&&Date.now()-ui.tideAt<700;tides=`<div class="tides"><span>Tides</span>${G.tideNow.map(n=>`<span class="tcard ${n===7?'seven':''} ${fresh?'fl':''}">${n}</span>`).join('')}`;
+    if(got){const any=got.some(x=>x>0);tides+=`<span class="gain">${any?'You +'+got.map((x,g)=>x?`<span class="res">${x}${resIc(g)}</span>`:'').join(''):'<span class="sub">Nothing for you</span>'}</span>`}
+    tides+=`</div>`;
+  }
+  const legend=`<div class="legend">${G.board.marks.map((v,i)=>{const mm=G.players[meIdx()].ch.some(id=>id[0]==='R'&&(+id[1]===i||+id[2]===i));return `<span class="${mm?'mine':''}"><b>${MARKS[i][0]}</b> ${MARKS[i]}</span>`}).join('')}</div>`;
+  return `${tides}<div class="islandwrap">${islandSVG(o)}</div>${legend}`;
+}
+
+/* ---------- action board ---------- */
+function pileHTML(id){
+  const s=G.sp[id],d=SPACES[id];let o='';
+  const show=d.acc?s.pile:d.gain||null;
+  if(show)for(let g=0;g<6;g++)if(show[g])o+=`<span>${show[g]}${resIc(g)}</span>`;
+  if(d.pick)o+=`<span>${d.pick}×${ic('any')}</span>`;
+  if(d.feast)o+=`<span>${G.players[meIdx()].kin}${resIc(5)}</span>`;
+  return o;
+}
+function boardView(){
+  const pi=G.turn,my=mine()&&G.phase==='work'&&!G.pend;
+  const newId=G.upcoming[G.moon-1];
+  let h='<div class="board">';
+  for(const id of G.spaces){
+    const s=G.sp[id],d=SPACES[id],taken=s.occ>=0;
+    const ok=my&&!taken&&canPlace(G,pi,id);
+    const cls=['space',taken?'taken':'',id===newId?'new':'',ui.sel===id?'sel':'',my&&!taken&&!ok?'no':'',ok?'mine-ok':'',taken&&ui.hl[id]&&Date.now()-ui.hl[id]<2500&&ui.hl[id]>(ui.hlSeen[id]||0)?'hl':''].join(' ');
+    if(ui.hl[id])ui.hlSeen[id]=ui.hl[id];
+    h+=`<button class="${cls}" data-do="space" data-id="${id}" aria-label="${esc(d.name)}"><span class="sn">${esc(d.name)}</span><span class="sx">${esc(d.short)}</span><span class="pile">${pileHTML(id)}</span>${taken?`<svg class="occ" viewBox="0 0 20 26"><circle cx="10" cy="6" r="5" fill="var(--p${s.occ})" stroke="var(--pk${s.occ})" stroke-width="1.5"/><path d="M2,25 Q2,12 10,12 Q18,12 18,25 Z" fill="var(--p${s.occ})" stroke="var(--pk${s.occ})" stroke-width="1.5"/></svg>`:''}</button>`;
+  }
+  h+='</div>';
+  const next=G.upcoming[G.moon];
+  if(next&&G.moon<MOONS){const st=SPACES[next].stage;h+=`<p class="upnext">Next moon adds a new action${next==='kinfolk'?': <b>Kinfolk</b> (family growth)':' from stage '+['','I','II','III','IV'][st]}.${FEASTS.includes(G.moon)?' <b>Feast</b> after this moon.':''}</p>`}
+  return `<div class="scroll">${h}</div>`;
+}
+
+/* ---------- market ---------- */
+function craftCard(cid,k,opt){
+  if(!cid)return `<div class="craft cant"><span class="tier">Sold out</span></div>`;
+  const c=CRAFTS[cid],pi=actorIdx(),p=G.players[mine()?pi:meIdx()];
+  const can=has(p,c.cost),inAct=ui.act&&ui.act.kind==='craft';
+  const pts=c.end?'★':c.pts;
+  return `<button class="craft t${c.tier} ${inAct?(can?'can':'cant'):''} ${inAct&&ui.act.c===k?'sel':''}" data-do="craft" data-k="${k}"><span class="tier">Tier ${'I'.repeat(c.tier)}</span><span class="cn">${esc(c.name)}</span><span class="ct">${esc(c.text)}</span><span class="cost">${costHTML(c.cost)}</span>${pts?`<span class="pts">${pts}</span>`:''}</button>`;
+}
+function marketView(){
+  let h=`<div class="sect">Crafts${ui.act&&ui.act.kind==='craft'?' · tap one you can pay for':''}</div><div class="crafts">${G.market.map((c,k)=>craftCard(c,k)).join('')}</div>`;
+  h+=`<div class="sect">Offers between players</div>`;
+  if(!G.offers.length)h+=`<p class="sub">No open offers. On your turn, tap Trade to post one or to trade with the supply.</p>`;
+  else h+=G.offers.map((o,k)=>offerHTML(o,k)).join('');
+  const d=[1,2,3].map(t=>G.decks[t].length);
+  h+=`<p class="sub" style="margin-top:10px">Left in the craft decks: Tier I ${d[0]}, Tier II ${d[1]}, Tier III ${d[2]}.</p>`;
+  return `<div class="scroll">${h}</div>`;
+}
+function offerHTML(o,k,canTake){
+  const pi=actorIdx();const ok=mine()&&G.phase==='work'&&offerOk(G,o,pi);
+  return `<div class="offer ${has(G.players[o.by],o.give)?'':'bad'}" style="${pcv(o.by)}"><span class="who"></span><span class="what"><b>${esc(G.players[o.by].name)}</b> gives ${costHTML(o.give)} for ${costHTML(o.get)}</span>${canTake&&o.by!==pi?`<button class="btn sm ${ok?'primary':''}" data-do="oaccept" data-k="${k}" ${ok?'':'disabled'}>Take</button>`:''}</div>`;
+}
+
+/* ---------- family / tableau ---------- */
+function nextFeast(){return FEASTS.find(f=>f>G.moon||(f===G.moon&&(G.phase==='work'||G.phase==='raider'||G.phase==='feast')))}
+function familyView(pi,inSheet){
+  const p=G.players[pi],me=pi===meIdx(),show=me||G.opts.open||G.phase==='end';
+  let h='';
+  h+=`<div class="goods">${RES.map((r,g)=>`<div class="good"><svg class="ic"><use href="#i-${r}"/></svg><b>${p.res[g]}</b><small>${RN[g]}</small></div>`).join('')}</div>`;
+  const sc=scoreOf(G,pi,!show);
+  h+=`<div class="statgrid"><div class="stat"><b>${p.kin}</b><small>kin · ${beds(p)} beds</small></div><div class="stat"><b>${p.houses}·${p.halls}</b><small>houses · halls</small></div><div class="stat"><b>${p.roads}</b><small>roads · best ${p.lr}</small></div><div class="stat"><b>${sc.total}</b><small>points${show?'':' seen'}</small></div></div>`;
+  const nf=nextFeast();
+  if(nf&&G.phase!=='end'){
+    const need=feedNeed(p),conv=p.res[3]*eatRate(p,3)+p.res[4]*eatRate(p,4),short=need-p.res[5];
+    const when=nf===G.moon?'after this moon':`after moon ${nf}`;
+    if(short>0)h+=`<div class="feastwarn">${ic('food')} Feast ${when}: needs ${need} food, ${me?'you have':'has'} ${p.res[5]}.${conv>0?` Grain and wool can cover ${Math.min(conv,short)}.`:''}</div>`;
+    else h+=`<div class="feastok">${ic('food')} Feast ${when}: needs ${need} food. ${me?'You have':esc(p.name)+' has'} enough.</div>`;
+  }
+  const rates=[0,1,2,3,4].map(g=>rateOf(G,pi,g));
+  h+=`<p class="sub" style="margin-top:6px">Trade rates: ${rates.map((r,g)=>`${r}:1 ${RES[g]}`).join(' · ')}. Eat: grain ${eatRate(p,3)}, wool ${eatRate(p,4)} food.</p>`;
+  h+=`<div class="sect">Crafts</div>`;
+  h+=p.crafts.length?`<div class="mycrafts">${p.crafts.map(id=>`<div class="mc"><b>${esc(CRAFTS[id].name)}</b> · ${craftPts(G,pi,id)} pt<br><span class="sub">${esc(CRAFTS[id].text)}</span></div>`).join('')}</div>`:'<p class="sub">None yet. Buy them at the Workshop.</p>';
+  h+=`<div class="sect">Charters ${show?'':'<span class="tag">secret</span>'}</div>`;
+  if(show){const dn=chDone(G,pi);h+=p.ch.length?p.ch.map((id,i)=>charterHTML(id,dn[i],pi)).join(''):'<p class="sub">None.</p>'}
+  else h+=`<p class="sub">${p.ch.length} hidden charter${p.ch.length===1?'':'s'}.</p>`;
+  if(me&&!inSheet)h+=`<div class="sect">Score so far</div><p class="sub">Houses ${sc.houses} · Halls ${sc.halls} · Kin ${sc.kin} · Crafts ${sc.crafts} · Charters ${sc.charters} · Longest road ${sc.road} · Hardship ${sc.hard}. Unfinished charters cost ${G.opts.forgive?0:RULES.chPen} each at the end.</p>`;
+  return h;
+}
+function charterHTML(id,done,pi,sel){
+  const c=charterInfo(G,id);let prog='';
+  if(pi!==undefined&&!done&&c.route&&G.phase!=='charter'){const need=routeNeed(G,pi,c.route[0],c.route[1]);prog=need>=60?'<span class="tag warn">blocked</span>':`<span class="tag">${need} road${need===1?'':'s'} to go</span>`}
+  return `<div class="chart ${done?'done':''} ${sel?'sel':''}"><div class="cpts">${c.pts}</div><div class="cbody"><b>${esc(c.name)}</b> ${done?'<span class="tag ok">done</span>':prog}<div class="sub">${esc(c.text)}</div></div></div>`;
+}
+
+/* ================= Strand — screens, dock, sheets ================= */
+function topbarHTML(){
+  let moons='';for(let m=1;m<=MOONS;m++)moons+=`<span class="moon ${m<G.moon?'past':m===G.moon?'now':''} ${FEASTS.includes(m)?'feast':''}" title="Moon ${m}${FEASTS.includes(m)?' · feast':''}"></span>`;
+  const label=G.moon?`Moon ${G.moon}`:'Landing';
+  return `<header class="topbar"><span class="mark">Strand</span><span class="sub">${label}</span><span class="moons" aria-label="Moon ${G.moon} of ${MOONS}. Red dots mark feasts.">${moons}</span><button class="iconbtn" data-do="menu" aria-label="Menu">${ic('menu')}</button></header>`;
+}
+function stripHTML(){
+  const a=actorIdx(),me=meIdx();
+  return `<div class="strip">${G.players.map((p,i)=>{
+    const sc=scoreOf(G,i,!(i===me||G.opts.open)).total;
+    let kins='';const free=freeKin(p);for(let k=0;k<p.kin;k++){const baby=k>=p.kin-p.fresh;kins+=`<i class="${baby?'baby':''} ${!baby&&k>=free?'used':''}"></i>`}
+    const think=i===a&&p.bot&&G.phase!=='end'?'<span class="think"><i></i><i></i><i></i></span>':'';
+    return `<button class="chip ${i===a&&G.phase!=='end'?'act':''} ${i===me&&!p.bot&&p.name!=='You'?'you':''}" style="${pcv(i)}" data-do="peek" data-p="${i}" aria-label="${esc(p.name)}: ${sc} points, ${p.res[5]} food"><span class="nm">${esc(p.name)}</span><span class="st"><b>${sc}</b>${ic('star','star')}<span class="fd">${p.res[5]}${ic('food')}</span></span><span class="kins">${kins}</span>${think}</button>`}).join('')}</div>`;
+}
+function recapEntries(){
+  const me=meIdx(),from=seen[me]||0;
+  return G.log.filter(l=>l.s>from&&l.p!==me&&!l.minor&&!l.moon&&l.p!==-1||l.s>from&&(l.tides||l.moon)).slice(-4);
+}
+function recapHTML(){
+  if(!mine()||!ui.recapOpen||G.phase==='setup'||G.phase==='charter')return '';
+  const ents=recapEntries();if(!ents.length)return '';
+  return `<div class="recap"><h4>Since your last turn</h4><ul>${ents.map(l=>`<li style="${pcv(Math.max(0,l.p))}">${l.p>=0?'<i></i>':'<span>·</span>'}<span>${esc(l.t)}</span></li>`).join('')}</ul><button class="x" data-do="recapX" aria-label="Hide">${ic('x')}</button></div>`;
+}
+function tabsHTML(){
+  const v=ui.view,offers=G.offers.filter(o=>o.by!==meIdx()).length;
+  const t=(id,label,icon,badge)=>`<button class="tab ${v===id?'on':''}" data-do="view" data-v="${id}">${ic(icon)}<span>${label}</span>${badge?`<span class="badge">${badge}</span>`:''}</button>`;
+  return `<nav class="tabs">${t('island','Island','hex')}${t('board','Actions','kin')}${t('market','Market','craft',offers||'')}${t('family','Family','house')}</nav>`;
+}
+function tip(){
+  if(!prefs.tips||!mine())return '';
+  const p=G.players[actorIdx()];let t='';
+  if(G.phase==='setup')t='Choose a corner that touches several numbers. 6 and 8 come up most often. Wood, clay, grain and wool build houses.';
+  else if(G.phase==='charter')t='Charters are secret goals. Routes ask you to link two coastal landmarks with your own roads.';
+  else if(G.phase==='raider')t='Put the raider on a hex that feeds your rivals, not you. Its hex produces nothing until it moves.';
+  else if(G.phase==='feast')t='Each kin eats 2 food. A newborn eats 1. Each missing food costs 2 points.';
+  else if(G.phase==='work'){
+    if(ui.act&&ui.act.kind==='build')t='Tap a glowing spot to build. Tap your last piece again to take it back. Done keeps it all.';
+    else if(G.moon<=2)t='Settle gives a free road. A house needs a corner two steps from any other building. Houses add beds; Kinfolk (moon 3) fills a bed with a new kin.';
+    else if(FEASTS.includes(G.moon)&&p.res[5]<feedNeed(p))t='A feast comes after this moon. Nets, Odd jobs and the Helm give food. Grain and wool can be eaten.';
+    else if(beds(p)>p.kin&&G.spaces.includes('kinfolk')&&G.sp.kinfolk.occ<0)t='You have a free bed. Kinfolk adds a kin who works from next moon.';
+    else t='Take the Helm to go first next moon. First pick matters when Settle or Kinfolk is hot.';
+  }
+  return t?`<div class="tip">${esc(t)}</div>`:'';
+}
+function dockHTML(){
+  const a=actorIdx(),p=G.players[a],my=mine();
+  let msg='',acts='';
+  const undoB=canUndo()?`<button class="btn sm" data-do="undo">${ic('undo')}Undo</button>`:'';
+  if(G.phase==='end')return '';
+  if(!my){
+    const who=`<span class="dot" style="${pcv(a)}"></span>`;
+    const what=G.phase==='feast'?'is feeding the family':G.phase==='setup'?'is landing':G.phase==='charter'?'is choosing charters':G.phase==='raider'?'is moving the raider':'is choosing';
+    msg=`${who}<span><b>${esc(p.name)}</b> ${p.bot?what+'…':(mode==='online'?'— waiting for their phone':what)}</span>`;
+    if(mode==='online'&&!p.bot&&seat()>=0)acts=`<button class="btn sm" data-do="handoff" data-p="${a}">Hand to computer</button>`;
+    if(mode==='online'&&seat()>=0&&G.players[seat()].bot&&G.players[seat()].away)acts=`<button class="btn sm primary" data-do="retake">Take my seat back</button>`;
+    return `<div class="dock"><div class="msg">${msg}</div>${acts||undoB?`<div class="acts">${undoB}${acts}</div>`:''}</div>`;
+  }
+  const pre=`<span class="dot" style="${pcv(a)}"></span>`;
+  if(G.phase==='charter'){msg=`${pre}<span><b>Choose your charters</b> <span class="sub">Keep 2 or 3. Secret goals.</span></span>`;acts=`<button class="btn primary" data-do="charters">See charters</button>`}
+  else if(G.phase==='setup'){const s=ui.setupSel;const second=G.si>=G.np;
+    msg=`${pre}<span><b>${!s?'Place a house':s.e===null?'Now a road next to it':'Ready'}</b> <span class="sub">${second?'Second landing: it gives 1 good per hex around it.':'First landing.'}</span></span>`;
+    acts=`${s?'<button class="btn" data-do="setupClear">Clear</button>':''}<button class="btn primary" data-do="setupPlace" ${s&&s.e!==null?'':'disabled'}>Land here</button>`}
+  else if(G.phase==='raider'){const r=ui.rsel;
+    msg=`${pre}<span><b>Squall! Move the raider</b> <span class="sub">Tap a hex. You steal 1 good from someone there.</span></span>`;
+    if(r&&r.hex!==null){const vs=raidTargets(G,a,r.hex);if(vs.length>1)acts=vs.map(v=>`<button class="btn sm ${r.vic===v?'primary':''}" data-do="vic" data-v="${v}" style="${pcv(v)}">${esc(G.players[v].name)}</button>`).join('');
+      acts+=`<button class="btn primary" data-do="raider" ${r.vic===null?'disabled':''}>Move here</button>`}}
+  else if(G.phase==='feast'){const need=feedNeed(p);msg=`${pre}<span><b>Feast</b> <span class="sub">Need ${need} food, you have ${p.res[5]}.</span></span>`;acts=`${undoB}<button class="btn primary" data-do="feast">Feed the family</button>`}
+  else if(G.pend){msg=`${pre}<span><b>Keep new charters?</b></span>`;acts=`<button class="btn primary" data-do="charters">Choose</button>`}
+  else if(ui.act){
+    const A=ui.act,d=SPACES[A.sp];
+    if(A.kind==='build'){const st=buildState();
+      const parts=[];if(st){if(st.L.roads&&st.L.roads<99)parts.push(`roads ${st.roads}/${st.L.roads}`);if(st.L.homes&&st.L.homes<99)parts.push(`house or hall ${st.homes}/${st.L.homes}`);if(st.L.halls)parts.push(`halls ${st.homes}/${st.L.halls}`)}
+      const nextCost=st?(st.nextRoadFree?'next road free':`road ${fmt(st.rc)}`):'';
+      msg=`${pre}<span><b>${esc(d.name)}</b> <span class="sub">${parts.join(' · ')}${nextCost?' · '+nextCost:''}${st&&!st.targets.length?' · nothing more you can build':''}</span></span>`;
+      acts=`<button class="btn" data-do="cancelAct">Cancel</button>${A.b.length?`<button class="btn" data-do="stepBack" aria-label="Take back last piece">${ic('undo')}</button>`:''}<button class="btn primary" data-do="doneBuild" ${A.b.length?'':'disabled'}>Done${A.b.length?' · build '+A.b.length:''}</button>`}
+    else if(A.kind==='craft'){const c=A.c!==null?G.market[A.c]:null;msg=`${pre}<span><b>Workshop</b> <span class="sub">${c?`Buy ${esc(CRAFTS[c].name)} for ${fmt(CRAFTS[c].cost)}?`:'Tap a craft you can pay for.'}</span></span>`;
+      acts=`<button class="btn" data-do="cancelAct">Cancel</button><button class="btn primary" data-do="buy" ${c?'':'disabled'}>Buy</button>`}
+    else if(A.kind==='raid'){msg=`${pre}<span><b>Raid</b> <span class="sub">${A.hex===null?'Tap a hex for the raider.':A.vic===-1?'No one to rob there. You can still block it.':A.vic===null?'Whom do you rob?':`Steal 2 goods from ${esc(G.players[A.vic].name)}.`}</span></span>`;
+      if(A.hex!==null){const vs=raidTargets(G,a,A.hex);if(vs.length>1)acts=vs.map(v=>`<button class="btn sm ${A.vic===v?'primary':''}" data-do="vic" data-v="${v}">${esc(G.players[v].name)}</button>`).join('')}
+      acts=`<button class="btn" data-do="cancelAct">Cancel</button>`+acts+`<button class="btn primary" data-do="raid" ${A.hex!==null&&A.vic!==null?'':'disabled'}>Raid</button>`}
+    else{msg=`${pre}<span><b>${esc(d.name)}</b></span>`;acts=`<button class="btn" data-do="cancelAct">Cancel</button><button class="btn primary" data-do="reopen">Choose</button>`}
+  }else if(ui.sel){
+    const d=SPACES[ui.sel];msg=`${pre}<span><b>${esc(d.name)}</b> <span class="sub">${esc(d.short)}${spaceHint(ui.sel)}</span></span>`;
+    acts=`<button class="btn" data-do="unsel">Back</button><button class="btn primary" data-do="place">${ic('kin')}Place kin</button>`}
+  else{
+    const left=freeKin(p);const need=feedNeed(p),fe=FEASTS.includes(G.moon);
+    const warn=fe&&p.res[5]<need?` <span class="tag warn">Feast after this moon: ${p.res[5]}/${need} food</span>`:'';
+    msg=`${pre}<span><b>Your turn</b> <span class="sub">Pick an action · ${left} kin left this moon</span>${warn}</span>`;
+    acts=`${undoB}<button class="btn" data-do="trade">${ic('trade')}Trade</button>${ui.view!=='board'?'<button class="btn primary" data-do="view" data-v="board">Actions</button>':''}`;
+  }
+  return `<div class="dock mine">${tip()}<div class="msg">${msg}</div>${acts?`<div class="acts">${acts}</div>`:''}</div>`;
+}
+function spaceHint(id){
+  const d=SPACES[id],p=G.players[G.turn];
+  if(d.build&&!d.build.halls){const L=buildLimits(G,G.turn,id);const bits=[];if(L.free)bits.push('first road free');bits.push('road = wood + clay','house = wood, clay, grain, wool','hall = 2 grain + 3 stone');return ' · '+bits.join(' · ')}
+  if(d.grow)return ` · You have ${p.kin} kin and ${beds(p)} beds.`;
+  if(id==='helm')return G.helm===G.turn?' · You already hold the Helm.':'';
+  return '';
+}
+
+/* ---------- sheets ---------- */
+function sheetWrap(inner,foot){const fr=ui.sheet!==ui.sheetDrawn;ui.sheetDrawnNext=ui.sheet;return `<div class="scrim ${fr?'fr':''}" data-do="scrim"><div class="sheet ${fr?'fr':''}" role="dialog" aria-modal="true"><div class="grab"></div><div class="sin">${inner}</div>${foot?`<div class="sfoot">${foot}</div>`:''}</div></div>`}
+function sheetHTML(){
+  const s=ui.sheet;if(!s)return '';
+  if(!G&&!['rules','settings'].includes(s))return '';
+  const close='<button class="btn" data-do="close">Close</button>';
+  switch(s){
+    case 'menu':return sheetWrap(`<h2>Menu</h2><div class="menu" style="margin-top:8px">
+      <button class="btn" data-do="rules">${ic('book')}How to play</button><button class="btn" data-do="log">${ic('list')}Game log</button><button class="btn" data-do="settings">${ic('gear')}Settings</button>
+      <button class="btn" data-do="home">${ic('home')}${mode==='online'?'Leave to home':'Save and go home'}</button><button class="btn" data-do="newgame">${ic('x')}${mode==='online'?'End online game':'Quit this game'}</button></div>`,close);
+    case 'rules':return sheetWrap(rulesHTML(),close);
+    case 'settings':return sheetWrap(settingsHTML(),close);
+    case 'log':return sheetWrap(`<h2>Game log</h2><ul class="log">${G.log.slice().reverse().map(l=>`<li class="${l.moon?'m':''}" style="${pcv(Math.max(0,l.p))}">${l.p>=0?'<i></i>':''}<span>${esc(l.t)}</span></li>`).join('')}</ul>`,close);
+    case 'player':{const i=ui.peek.p,p=G.players[i];return sheetWrap(`<h2 style="${pcv(i)}">${esc(p.name)}${p.bot?' <span class="tag">computer</span>':''}</h2>${familyView(i,true)}`,close)}
+    case 'craftInfo':{const cid=G.market[ui.peek.craft];if(!cid)return '';const c=CRAFTS[cid];return sheetWrap(`<h2>${esc(c.name)}</h2><p>${esc(c.text)}</p><p>Cost: ${costHTML(c.cost)} · Points: ${c.end?'see text':c.pts}</p><p class="sub">Buy crafts with the Workshop action${G.spaces.includes('guild')?' or the Guild':''}.</p>`,close)}
+    case 'confirmNew':return sheetWrap(`<h2>${mode==='online'?'End the online game?':'Quit this game?'}</h2><p>${mode==='online'?'This ends it on every phone.':'The saved game will be lost.'}</p>`,`<button class="btn" data-do="close">Keep playing</button><button class="btn hot" data-do="reallyNew">${mode==='online'?'End it':'Quit'}</button>`);
+    case 'handoff':{const i=ui.peek.hand;return sheetWrap(`<h2>Hand ${esc(G.players[i].name)}'s seat to the computer?</h2><p>Use this when someone has gone quiet. The computer plays their turns until they tap "Take my seat back" on their phone.</p>`,`<button class="btn" data-do="close">Cancel</button><button class="btn primary" data-do="reallyHand" data-p="${i}">Hand it over</button>`)}
+    case 'pick':{if(!ui.act)return '';const n=pickN(),A=ui.act,d=SPACES[A.sp];
+      const cnt=[0,0,0,0,0];A.g.forEach(g=>cnt[g]++);
+      return sheetWrap(`<h2>${esc(d.name)}</h2><p>Choose ${n} good${n>1?'s':''}${A.sp==='odd'?' (you also get 1 food)':A.sp==='charters'?' (then draw 2 charters)':''}.</p><div class="picker">${[0,1,2,3,4].map(g=>`<button class="${cnt[g]?'on':''}" data-do="pickg" data-g="${g}">${resIc(g)}${RN[g]}${cnt[g]?`<span class="n">${cnt[g]}</span>`:''}</button>`).join('')}</div>`,
+        `<button class="btn" data-do="cancelAct">Cancel</button><button class="btn primary" data-do="pickDone" ${A.g.length===n?'':'disabled'}>Take ${A.g.length}/${n}</button>`)}
+    case 'bazaar':{if(!ui.act)return '';const A=ui.act,p=G.players[G.turn];const r=p.res.slice();r[5]++;A.bz.forEach(([x,y])=>{r[x]-=2;r[y]++});
+      return sheetWrap(`<h2>Bazaar</h2><p>You get 1 food. Then trade 2 of a good for 1 of another, as often as you like.</p>
+        <h3>Give 2</h3><div class="picker six">${[0,1,2,3,4,5].map(g=>`<button class="${ui.bzGive===g?'on':''}" data-do="bzg" data-g="${g}" ${r[g]<2?'disabled style="opacity:.4"':''}>${resIc(g)}<span>${r[g]}</span></button>`).join('')}</div>
+        <h3>Get 1</h3><div class="picker six">${[0,1,2,3,4,5].map(g=>`<button class="${ui.bzGet===g?'on':''}" data-do="bzt" data-g="${g}">${resIc(g)}${RN[g]}</button>`).join('')}</div>
+        <div class="row"><button class="btn" data-do="bzAdd">Add trade</button>${A.bz.length?`<button class="btn" data-do="bzPop">Remove last</button>`:''}</div>
+        <p>${A.bz.length?A.bz.map(([x,y])=>`2 ${RES[x]} → 1 ${RES[y]}`).join(' · '):'<span class="sub">No trades yet.</span>'}</p>`,
+        `<button class="btn" data-do="cancelAct">Cancel</button><button class="btn primary" data-do="bzDone">Done</button>`)}
+    case 'trade':return sheetWrap(tradeHTML(),close);
+    case 'feast':return feastSheet();
+    case 'charters':return charterSheet();
+  }
+  return '';
+}
+function tradeHTML(){
+  const pi=actorIdx(),p=G.players[pi],can=mine()&&canFree(G,pi)&&G.phase==='work';
+  const tab=ui.tradeTab;
+  let h=`<h2>Trade</h2><div class="seg" style="margin:6px 0 10px"><button class="${tab==='supply'?'on':''}" data-do="ttab" data-v="supply">With the supply</button><button class="${tab==='offers'?'on':''}" data-do="ttab" data-v="offers">With players${G.offers.length?' ('+G.offers.length+')':''}</button></div>`;
+  if(!can)h+='<p class="sub">You can trade on your turn, before you place a kin.</p>';
+  if(tab==='supply'){
+    const give=ui.tradeGive===undefined?0:ui.tradeGive;
+    h+=`<p class="sub">Your rates come from harbors you touch and crafts. Food can be traded too.</p><h3>Give</h3><div class="picker six">${[0,1,2,3,4,5].map(g=>{const r=rateOf(G,pi,g);return `<button class="${give===g?'on':''}" data-do="tg" data-g="${g}">${resIc(g)}<span>${r}:1</span><span class="sub" style="font-size:10px">have ${p.res[g]}</span></button>`}).join('')}</div>
+      <h3>Get 1</h3><div class="picker six">${[0,1,2,3,4,5].map(g=>`<button data-do="tsup" data-g="${give}" data-h="${g}" ${!can||g===give||p.res[give]<rateOf(G,pi,give)?'disabled style="opacity:.4"':''}>${resIc(g)}${RN[g]}</button>`).join('')}</div>`;
+  }else{
+    h+=G.offers.length?G.offers.map((o,k)=>offerHTML(o,k,true)).join(''):'<p class="sub">No open offers.</p>';
+    if(can){
+      const row=(side,arr)=>[0,1,2,3,4,5].map(g=>`<div class="tline"><span class="lbl">${resIc(g)}${RN[g]}${side==='give'?` <small>have ${p.res[g]}</small>`:''}</span><span class="stepper"><button data-do="ostep" data-side="${side}" data-g="${g}" data-n="-1" aria-label="less">−</button><b>${arr[g]}</b><button data-do="ostep" data-side="${side}" data-g="${g}" data-n="1" aria-label="more">+</button></span></div>`).join('');
+      h+=`<h3>Post an offer</h3><p class="sub">It stays open until your next turn. Anyone may take it on their turn.${G.offers.some(o=>o.by===pi)?' Posting replaces your open offer.':''}</p><h3>You give</h3>${row('give',ui.offerGive)}<h3>You want</h3>${row('get',ui.offerGet)}<button class="btn primary wide" data-do="opost" style="margin-top:10px">Post offer</button>`;
+    }
+  }
+  return h;
+}
+function feastSheet(){
+  const pi=actorIdx(),p=G.players[pi],need=feedNeed(p),short=Math.max(0,need-p.res[5]);
+  const rg=eatRate(p,3),rw=eatRate(p,4);
+  let h=`<h2>Feast</h2><p>${p.kin} kin${p.born?` (${p.born} newborn)`:''} eat <b>${need} food</b>. You have <b>${p.res[5]}</b>.</p>`;
+  h+=`<div class="tline"><span class="lbl">${resIc(3)}Eat 1 grain <small>+${rg} food · have ${p.res[3]}</small></span><button class="btn sm" data-do="eat" data-g="3" ${p.res[3]?'':'disabled'}>Eat</button></div>`;
+  h+=`<div class="tline"><span class="lbl">${resIc(4)}Eat 1 wool <small>+${rw} food · have ${p.res[4]}</small></span><button class="btn sm" data-do="eat" data-g="4" ${p.res[4]?'':'disabled'}>Eat</button></div>`;
+  for(let g=0;g<5;g++){const r=rateOf(G,pi,g);h+=`<div class="tline"><span class="lbl">${resIc(g)}Trade ${r} ${RES[g]} → 1 food <small>have ${p.res[g]}</small></span><button class="btn sm" data-do="ftrade" data-g="${g}" ${p.res[g]>=r?'':'disabled'}>Trade</button></div>`}
+  h+=short?`<div class="feastwarn">${short} food short: ${short} hardship (−${short*RULES.hardship} points).</div>`:`<div class="feastok">Everyone eats. ${p.res[5]-need} food left over.</div>`;
+  return sheetWrap(h,`${canUndo()?'<button class="btn" data-do="undo">Undo</button>':''}<button class="btn ${short?'hot':'primary'}" data-do="feed">${short?`Feed anyway (−${short*RULES.hardship})`:'Feed the family'}</button>`);
+}
+function charterSheet(){
+  const pi=actorIdx(),p=G.players[pi];
+  const cards=G.phase==='charter'?p.offer:G.pend?G.pend.cards:[];
+  const isStart=G.phase==='charter';
+  const marks=new Set();cards.forEach(id=>{if(id[0]==='R'&&ui.keep.includes(id)){marks.add(+id[1]);marks.add(+id[2])}});
+  let h=`<h2>${isStart?'Your charters':'New charters'}</h2><p class="sub">${isStart?'Keep 2 or 3. Finished charters score their points. ':'Keep any. '}${G.opts.forgive?'':'Each unfinished charter costs 2 points at the end.'}</p>`;
+  h+=cards.map(id=>`<button style="display:block;width:100%;text-align:left" data-do="ckeep" data-id="${id}">${charterHTML(id,false,undefined,ui.keep.includes(id))}</button>`).join('');
+  h+=`<div style="max-width:300px;margin:6px auto 0">${islandSVG({mini:true,marks:[...marks]})}</div><p class="sub" style="text-align:center">Gold markers: landmarks on the charters you keep.</p>`;
+  const n=ui.keep.length,ok=isStart?n>=2&&n<=3:true;
+  return sheetWrap(h,`<button class="btn primary" data-do="ckeepDone" ${ok?'':'disabled'}>Keep ${n}</button>`);
+}
+function settingsHTML(){
+  const T=(k,label,sub)=>`<button class="toggle" data-do="pref" data-k="${k}"><span><b>${label}</b>${sub?`<span class="sub">${sub}</span>`:''}</span><span class="sw ${prefs[k]?'on':''}"></span></button>`;
+  return `<h2>Settings</h2>${T('sound','Sound','Soft tones for taps, building, tides and feasts.')}${T('haptic','Vibration','Buzz when it is your turn.')}${T('confirm','Confirm moves','Tap an action, then tap Place. Safer on a small screen.')}${T('tips','First-game tips','Short hints in the bottom bar.')}
+    <h3>Theme</h3><div class="seg">${['auto','light','dark'].map(t=>`<button class="${prefs.theme===t?'on':''}" data-do="theme" data-v="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div>
+    <h3>House rules <span class="sub" style="font-weight:400">(for new games)</span></h3>${T('calm','Calm seas','Squalls never take goods. The raider still moves.')}${T('forgive','Forgiving charters','No −2 for unfinished charters.')}${T('open','Open charters','Everyone sees all charters.')}`;
+}
+function rulesHTML(){
+  return `<div class="rules"><h2>How to play Strand</h2>
+  <p>Ten moons. Settle a new island, grow your family, and feed them at four feasts. Most points wins.</p>
+  <h3>${ic('hex')}Landing</h3><ul><li>Keep 2 or 3 secret charters. Then each player lands a house and a road, twice, in snake order. Your second house gives 1 good from each hex around it.</li><li>The last player to land holds the Helm for moon 1. The first player gets 1 extra food.</li></ul><h3>${ic('kin')}Each moon</h3><ul><li>A new action is added to the board.</li><li><b>Tides:</b> 3 cards flip (2–12). Each hex with a flipped number gives 1 good to every house on its corners, 2 to every hall.</li><li>Take turns placing one kin on an empty action and doing it. One kin per action.</li><li>Before you place, you may trade: 4 for 1 with the supply (harbors 3:1 or 2:1), or offers with players.</li></ul>
+  <h3>${ic('hex')}The island</h3><ul><li><b>Road</b> = wood + clay. <b>House</b> = wood, clay, grain, wool. <b>Hall</b> (upgrade a house) = 2 grain + 3 stone.</li><li>A house needs your road and no building on any next corner. Settle gives the first road free.</li><li>A <b>7</b> is a squall: anyone with more than 10 goods (not food) loses half. The Helm player moves the raider and steals 1. The raider's hex makes nothing.</li></ul>
+  <h3>${ic('food')}Family and feasts</h3><ul><li>Houses give 1 bed, halls 2. <b>Kinfolk</b> (from moon 3) adds a kin if you have a free bed. Newborns work next moon.</li><li><b>Feasts</b> after moons 3, 6, 8, 10: each kin eats 2 food (a newborn 1). Grain and wool can be eaten. Each missing food is a hardship: −2.</li></ul>
+  <h3>${ic('craft')}Crafts and charters</h3><ul><li>The Workshop buys a craft: points and a lasting power.</li><li>You start with 2–3 secret <b>charters</b>: link two landmarks with your roads, or reach a goal. Done = points; unfinished = −2.</li></ul>
+  <h3>${ic('star')}Score</h3><p>House 1 · Hall 2 · Kin 2 · Crafts · Charters · Longest road (5+) 3 · Hardship −2.</p>
+  <div class="eg"><b>Good first moons:</b> grab wood and clay, Settle toward a strong corner, and take the Helm when you want to go first. Get a free bed before moon 3 so you can grow.</div></div>`;
+}
+
+/* ---------- home + setup + online ---------- */
+function heroSVG(){
+  const pts=(cx,cy,r)=>{let a=[];for(let k=0;k<6;k++){const t=Math.PI/180*(60*k-90);a.push((cx+r*Math.cos(t)).toFixed(1)+','+(cy+r*Math.sin(t)).toFixed(1))}return a.join(' ')};
+  const hx=[[0,0,'field'],[-34.6,0,'forest'],[34.6,0,'meadow'],[-17.3,-30,'crag'],[17.3,-30,'clay'],[-17.3,30,'shoal'],[17.3,30,'forest']];
+  return `<svg viewBox="-120 -80 240 150" aria-hidden="true"><defs><linearGradient id="hsea" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--sea)"/><stop offset="1" stop-color="var(--sea2)"/></linearGradient></defs>
+  <ellipse cx="0" cy="2" rx="112" ry="68" fill="url(#hsea)"/><ellipse cx="0" cy="2" rx="88" ry="58" fill="var(--foam)" opacity=".6"/>
+  ${hx.map(([x,y,t])=>`<polygon points="${pts(x,y,20)}" fill="var(--t-${t})" stroke="var(--surface)" stroke-width="2"/>`).join('')}
+  <path d="M-17.3,-10 L-17.3,-17 L-11.3,-23 L-5.3,-17 L-5.3,-10Z" fill="var(--p0)" stroke="var(--pk0)" stroke-width="1.5"/>
+  <path d="M11,9 L11,2 L17,-4 L23,2 L23,9Z" fill="var(--p1)" stroke="var(--pk1)" stroke-width="1.5"/>
+  <line x1="-5" y1="-12" x2="10" y2="-2" stroke="var(--pk0)" stroke-width="6" stroke-linecap="round"/><line x1="-5" y1="-12" x2="10" y2="-2" stroke="var(--p0)" stroke-width="3.5" stroke-linecap="round"/>
+  <g class="waves" fill="none" stroke="var(--surface)" stroke-width="2" stroke-linecap="round" opacity=".8"><path d="M-104,40 q8,-6 16,0 t16,0"/><path d="M76,-40 q8,-6 16,0 t16,0"/><path d="M70,48 q8,-6 16,0 t16,0"/></g></svg>`;
+}
+function seg(k,vals,cur,dis){return `<div class="seg">${vals.map(v=>`<button class="${v===cur?'on':''}" data-do="setupN" data-k="${k}" data-v="${v}" ${dis&&dis(v)?'disabled':''}>${v}</button>`).join('')}</div>`}
+function homeHTML(){
+  const saved=loadSave();
+  if(ui.screen==='local'){const S=ui.setup;
+    let names='';for(let i=0;i<S.lp;i++)names+=`<label class="field" for="nm${i}">${S.lp===1?'Your name':'Player '+(i+1)}<input id="nm${i}" maxlength="14" autocomplete="off" value="${esc(ui.names[i]||'')}"></label>`;
+    return `<div class="home"><button class="back" data-do="go" data-s="home">${ic('back')}Back</button><h1 style="font-size:30px">Play on this phone</h1>
+      <div class="box"><div class="pick"><span>People on this phone</span>${seg('lp',[1,2,3,4,5],S.lp)}</div><div class="pick"><span>Computer players</span>${seg('lb',[0,1,2,3,4],S.lb,v=>S.lp+v>5||S.lp+v<2)}</div>${names}
+      <p class="sub" style="margin-top:10px">${S.lp+S.lb} players · about ${S.lp+S.lb<=3?'30':'40'} minutes. Seats are drawn at random. Computers play their strongest.</p></div>
+      <div class="box">${['calm','forgive','open'].map(k=>`<button class="toggle" data-do="pref" data-k="${k}"><span><b>${{calm:'Calm seas',forgive:'Forgiving charters',open:'Open charters'}[k]}</b><span class="sub">${{calm:'Squalls never take goods.',forgive:'No −2 for unfinished charters.',open:'Everyone sees all charters.'}[k]}</span></span><span class="sw ${prefs[k]?'on':''}"></span></button>`).join('')}</div>
+      <button class="btn primary wide" data-do="startLocal" style="margin-top:16px;min-height:54px;font-size:17px">Start</button></div>`;
+  }
+  if(ui.screen==='online')return `<div class="home"><button class="back" data-do="go" data-s="home">${ic('back')}Back</button><h1 style="font-size:30px">Play online</h1>${onlineBox()}</div>`;
+  return `<div class="home"><div class="hero">${heroSVG()}<div class="wordmark">Strand</div><p class="tagline">Settle a new island. Grow your family. Feed them through ten moons.</p></div>
+    <div class="menu">${saved?`<button class="btn primary" data-do="continue">${ic('play')}Continue<small>Moon ${saved.moon||1}</small></button>`:''}
+    <button class="btn ${saved?'':'primary'}" data-do="go" data-s="local">${ic('kin')}Play on this phone<small>vs computers</small></button>
+    <button class="btn" data-do="go" data-s="online">${ic('globe')}Play online<small>each on a phone</small></button>
+    <button class="btn" data-do="rules">${ic('book')}How to play<small>2 minutes</small></button>
+    <button class="btn" data-do="settings">${ic('gear')}Settings</button></div></div>`;
+}
+
+/* ---------- end of game ---------- */
+function endHTML(){
+  const rows=G.players.map((p,i)=>({i,p,s:scoreOf(G,i)}));
+  const order=rows.slice().sort((a,b)=>b.s.total-a.s.total);
+  const w=G.players[G.winner];
+  const lines=[['Houses','houses'],['Halls','halls'],['Kin','kin'],['Crafts','crafts'],['Charters','charters'],['Longest road','road'],['Hardship','hard']];
+  let t=`<table class="scoretbl"><thead><tr><th></th>${order.map(r=>`<th><span class="pcol" style="${pcv(r.i)}"><i></i>${esc(r.p.name.slice(0,7))}</span></th>`).join('')}</tr></thead><tbody>`;
+  lines.forEach(([n,k])=>{t+=`<tr><td>${n}</td>${order.map(r=>`<td>${r.s[k]}</td>`).join('')}</tr>`});
+  t+=`<tr class="tot"><td>Total</td>${order.map(r=>`<td class="${r.i===G.winner?'win':''}">${r.s.total}</td>`).join('')}</tr></tbody></table>`;
+  let ch='';order.forEach(r=>{const dn=chDone(G,r.i);ch+=`<h3 style="${pcv(r.i)};margin-top:14px">${esc(r.p.name)}'s charters</h3>${r.p.ch.map((id,k)=>charterHTML(id,dn[k])).join('')||'<p class="sub">None.</p>'}`});
+  const me=meIdx(),myWin=G.winner===me&&!G.players[me].bot;
+  return `<div class="endwrap"><div class="winner"><svg class="crown" viewBox="0 0 64 64" aria-hidden="true"><path d="M8 46 L12 18 L24 32 L32 12 L40 32 L52 18 L56 46 Z" fill="var(--gold)" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="46" width="48" height="8" rx="2" fill="var(--gold)" stroke="var(--ink)" stroke-width="2"/></svg>
+    <h1>${myWin?'You win!':esc(w.name)+' wins'}</h1><p class="sub">${order[0].s.total} points after ten moons${order[1]?` · ${order[0].s.total-order[1].s.total} ahead of ${esc(order[1].p.name)}`:''}</p></div>
+    ${t}${ch}<div class="row" style="margin-top:18px"><button class="btn" data-do="home">${ic('home')}Home</button><button class="btn primary" style="flex:1" data-do="again">${ic('play')}Play again</button></div>
+    ${canUndo()?'<div class="row" style="margin-top:8px"><button class="btn sm" data-do="undo">Undo last move</button></div>':''}</div>`;
+}
+
+/* ---------- render ---------- */
+let renderQueued=false;
+function render(){
+  if(typeof document==='undefined')return;
+  const app=document.getElementById('app');if(!app)return;
+  const keep={};let focus=null;
+  try{app.querySelectorAll('input[id]').forEach(i=>keep[i.id]=i.value);focus=document.activeElement&&document.activeElement.id}catch(e){}
+  let scr=0;try{const sc=app.querySelector('.scroll');if(sc)scr=sc.scrollTop}catch(e){}
+  app.innerHTML=paint();
+  try{const sc=app.querySelector('.scroll');if(sc&&scr)sc.scrollTop=scr}catch(e){}
+  for(const id in keep){const el=document.getElementById(id);if(el)el.value=keep[id]}
+  if(focus){const el=document.getElementById(focus);if(el&&el.tagName==='INPUT')el.focus()}
+  notifyTurn();
+}
+function paint(){
+  const out=paint2();ui.sheetDrawn=ui.sheet?ui.sheetDrawnNext:null;ui.toastDrawn=ui.toast;return out;
+}
+function paint2(){
+  const toast=ui.toast?`<div class="toast ${ui.toast!==ui.toastDrawn?'fr':''}" role="status">${esc(ui.toast)}</div>`:'';
+  if(!G||ui.screen!=='game')return homeHTML()+sheetHTML()+toast;
+  if(G.phase==='end')return endHTML()+sheetHTML()+toast;
+  const my=mine();
+  // pass-and-play privacy cover
+  if(mode==='local'&&humans()>1&&my&&ui.shown!==actorIdx()){
+    return `<div class="cover"><div class="wordmark" style="font-size:40px">Strand</div><p>Pass the phone to</p><h1 style="${pcv(actorIdx())};font-size:32px">${esc(actor().name)}</h1><button class="btn primary" data-do="cover" style="min-width:200px">I'm ${esc(actor().name)} — show</button></div>`;
+  }
+  if(my&&ui.lastTurnSeen!==G.seq+':'+actorIdx()){ui.lastTurnSeen=G.seq+':'+actorIdx();if(ui.wasMine!==true){ui.recapOpen=true}}
+  // auto-open what the phase needs
+  if(my&&!ui.sheet){
+    if(G.phase==='charter'&&!ui.autoCh){ui.autoCh=true;ui.keep=[];ui.sheet='charters'}
+    if(G.pend&&ui.pendSeen!==G.seq){ui.pendSeen=G.seq;ui.keep=[];ui.sheet='charters'}
+    if(G.phase==='feast'&&ui.feastSeen!==G.moon+':'+actorIdx()){ui.feastSeen=G.moon+':'+actorIdx();ui.sheet='feast'}
+    if((G.phase==='setup'||G.phase==='raider')&&ui.view!=='island')ui.view='island';
+  }
+  if(G.phase!=='charter')ui.autoCh=false;
+  if(ui.sheet==='feast'&&(!my||G.phase!=='feast'))ui.sheet=null;
+  if(ui.sheet==='charters'&&(!my||(G.phase!=='charter'&&!G.pend)))ui.sheet=null;
+  ui.wasMine=my;
+  let main='';
+  const v=ui.view;
+  if(v==='island')main=islandView();else{ui.targets=[];if(v==='board')main=boardView();else if(v==='market')main=marketView();else main=`<div class="scroll">${familyView(meIdx())}</div>`}
+  return `<div class="game">${topbarHTML()}${stripHTML()}<main class="main">${recapHTML()}${main}</main>${dockHTML()}${tabsHTML()}</div>${sheetHTML()}${toast}`;
+}
+function notifyTurn(){
+  const m=!!G&&G.phase!=='end'&&mine()&&ui.screen==='game';
+  if(m&&!net.lastMine){buzz(140);if(G.phase==='work')SFX.turn()}
+  net.lastMine=m;
+  try{document.title=m&&mode==='online'?'Your turn · Strand':'Strand'}catch(e){}
+}
+
+/* ================= Strand — online play (shared doc games/current) ================= */
+const syncErr=e=>e&&(e.code==='invalid_argument'||e.code==='not_granted'||e.code==='revoked')?"This phone can't save moves. Ask the owner to share Strand with you as an Editor.":"That didn't sync. Check your connection and try again.";
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function commit(){
+  if(mode!=='online'||!net.ref||seat()<0)return;
+  net.rev++;net.dirty=true;flush();
+}
+async function flush(){
+  if(net.writing||!net.dirty)return;net.writing=true;net.dirty=false;
+  const body={status:'play',seats:net.doc.seats.slice(),names:net.doc.names||[],gid:net.gid,rev:net.rev,g:JSON.parse(JSON.stringify(G))};
+  try{await net.ref.set(body);net.doc=body}catch(e){
+    if(e&&(e.code==='invalid_argument'||e.code==='not_granted'||e.code==='revoked'))net.canWrite=false;
+    flash(syncErr(e));net.dirty=false;
+    if(net.doc&&net.doc.g){G=JSON.parse(JSON.stringify(net.doc.g));net.rev=net.doc.rev}
+    render();
+  }
+  net.writing=false;if(net.dirty)flush();
+}
+async function initNet(){
+  try{
+    if(typeof window==='undefined'||!window.claude||!window.claude.use){net.off=true;net.ready=true;render();return}
+    const [db,user]=await Promise.all([window.claude.use('db'),window.claude.use('user')]);
+    const id=user?(u=>{if(!u)return u;let d=null;const K="dev_id";for(const s of ["localStorage","sessionStorage"]){try{d=d||window[s].getItem(K)}catch(e){}}if(!d){d=Math.random().toString(36).slice(2,10);for(const s of ["localStorage","sessionStorage"]){try{window[s].setItem(K,d)}catch(e){}}}return u+"~"+d})(await user.id()):null;
+    if(!db||!id){net.off=true;net.ready=true;render();return}
+    try{net.canWrite=user&&user.can?await user.can('data.write'):null}catch(e){net.canWrite=null}
+    net.db=db;net.me=id;net.ref=db.doc('games/current');
+    net.ref.onSnapshot(snap=>{net.ready=true;net.doc=snap.exists?JSON.parse(JSON.stringify(snap.data())):null;applyDoc(net.doc);render()},
+      ()=>{net.off=true;net.ready=true;if(mode==='online')flash('Lost the connection to the online game. Reload the page to reconnect.');render()});
+  }catch(e){net.off=true;net.ready=true;render()}
+}
+function applyDoc(d){
+  const live=d&&d.status==='play'&&d.g&&(d.seats.includes(net.me)||net.watch);
+  if(live){
+    if(mode!=='online'&&(ui.screen!=='game'||!G)){mode='online';ui.act=null;ui.sel=null;ui.sheet=null;ui.view='board';ui.screen='game';net.rev=-1;net.gid=null;ui.lastFx=d.g.seq}
+    if(mode==='online'){
+      if(ui.act&&mine())net.pending=d;
+      else if(d.gid!==net.gid||d.rev>net.rev||(d.rev===net.rev&&!net.writing&&!net.dirty&&JSON.stringify(d.g)!==JSON.stringify(G))){
+        const fromOther=d.rev>net.rev;
+        G=JSON.parse(JSON.stringify(d.g));net.gid=d.gid;net.rev=d.rev;
+        if(fromOther)net.driver=false;
+        if(ui.sel&&!mine())ui.sel=null;if(ui.act&&!mine())ui.act=null;
+        fxScan();repairBots();
+      }
+    }
+  }else if(mode==='online'){mode='local';G=null;ui.act=null;ui.sel=null;ui.sheet=null;ui.screen='home';net.watch=false;net.rev=0;net.gid=null;net.driver=false;flash('The online game has ended.')}
+}
+function repairBots(){
+  // The phone that moves runs the computers that follow. If a saved game is ever left on a computer's turn, the lowest-seated person's phone finishes it.
+  clearTimeout(net.repairT);
+  if(!G||G.phase==='end'||!actor().bot||seat()<0)return;
+  const first=net.doc.seats.findIndex((u,i)=>u&&!G.players[i].bot);if(first!==seat())return;
+  const rev=net.rev;
+  net.repairT=setTimeout(()=>{if(net.rev!==rev||ui.act||!G||!actor().bot)return;net.driver=true;runBots()},4000);
+}
+async function hostGame(){
+  const name=(document.getElementById('hn')?.value||'').trim()||'Player 1';
+  const n=ui.setup.op,b=Math.min(ui.setup.ob,5-n);
+  const seats=Array(n).fill(null);seats[0]=net.me;const names=Array(n).fill('');names[0]=name;
+  try{await net.ref.set({status:'lobby',seats,names,bots:b,rev:0,opts:{calm:prefs.calm,forgive:prefs.forgive,open:prefs.open}})}catch(e){if(e&&e.code==='invalid_argument')net.canWrite=false;flash(syncErr(e));render()}
+}
+async function joinGame(){
+  const name=(document.getElementById('jn')?.value||'').trim()||'Player';
+  let ok=false;
+  for(let t=0;t<10&&!ok;t++){
+    try{const l=await net.ref.acquire({holder:net.me,ttlMs:1500});ok=!!l.acquired}
+    catch(e){if(e&&(e.code==='invalid_argument'||e.code==='not_granted'||e.code==='revoked')){net.canWrite=false;render();return}}
+    if(!ok)await sleep(400+Math.random()*500);
+  }
+  if(!ok){flash('Someone else is joining right now. Try again in a moment.');render();return}
+  let d;try{const s=await net.ref.get();d=s.exists?JSON.parse(JSON.stringify(s.data())):null}catch(e){flash(syncErr(e));render();return}
+  if(!d||d.status!=='lobby'){flash('That game is no longer open.');render();return}
+  if(d.seats.includes(net.me))return;
+  const i=d.seats.indexOf(null);if(i<0){flash('That game is already full.');render();return}
+  d.seats[i]=net.me;d.names[i]=name;
+  if(d.seats.every(Boolean)){
+    const table=shuffle([...d.names.map((nm,k)=>({name:nm||'Player',uid:d.seats[k]})),...shuffle(BOTNAMES.slice()).slice(0,d.bots||0).map(nm=>({name:nm,bot:true,uid:null}))]);
+    G=newGame(table.map(t=>({name:t.name,bot:!!t.bot})),d.opts||{});
+    const gid=Math.random().toString(36).slice(2,10);
+    const body={status:'play',seats:table.map(t=>t.uid),names:table.map(t=>t.name),gid,rev:1,g:JSON.parse(JSON.stringify(G))};
+    mode='online';net.gid=gid;net.rev=1;net.doc=body;net.driver=true;ui.view='island';ui.screen='game';ui.lastFx=G.seq;render();
+    try{await net.ref.set(body);runBots()}catch(e){if(e&&e.code==='invalid_argument')net.canWrite=false;else flash(syncErr(e));mode='local';G=null;ui.screen='online';render()}
+  }else{
+    try{await net.ref.set(d)}catch(e){if(e&&e.code==='invalid_argument')net.canWrite=false;else flash(syncErr(e));render()}
+  }
+}
+function endOnline(){if(net.ref)net.ref.set({status:'idle',rev:0}).catch(e=>{flash(syncErr(e));render()});net.driver=false}
+function handToComputer(i){
+  if(mode!=='online'||!G||i===seat())return;
+  const p=G.players[i];if(p.bot)return;
+  p.bot=true;p.away=net.doc.seats[i]||'x';ui.sheet=null;
+  log(G,i,`${p.name}'s seat is handed to a computer for now.`);
+  net.driver=true;commit();render();runBots();
+}
+function takeSeatBack(){
+  const i=seat();if(i<0||!G)return;const p=G.players[i];if(!p.bot||!p.away)return;
+  p.bot=false;delete p.away;log(G,i,`${p.name} takes their seat back.`);
+  clearTimeout(ui.botTimer);ui.botTimer=null;ui.busy=false;
+  commit();flash('Your seat is back. If a computer was mid-move, tap again if it did not stick.');render();
+}
+function onlineBox(){
+  let inner;
+  if(!net.ready)inner='<p class="sub">Connecting…</p>';
+  else if(net.off)inner='<p class="sub">Online play is not available right now. Check your internet connection, then reload.</p>';
+  else{
+    const d=net.doc,st=d&&d.status,S=ui.setup;
+    const noWrite=net.canWrite===false?`<div class="box"><b>This phone can watch but can't join.</b><p class="sub">The owner needs to open Share, turn off "Anyone with the link", and invite you by email as an Editor, then reload.</p></div>`:'';
+    if(noWrite&&st!=='play')inner=(st==='lobby'?`<p><b>${esc(d.names[0]||'Someone')}</b> is hosting a game.</p>`:'')+noWrite;
+    else if(st==='lobby'){
+      const joined=d.seats.filter(Boolean).length,need=d.seats.length,bots=d.bots||0;
+      const roster=d.seats.map((u,i)=>u?esc(d.names[i]||'Player'):'open seat').join(', ')+(bots?`, ${bots} computer${bots>1?'s':''}`:'');
+      if(d.seats.includes(net.me))inner=`<p><b>Waiting for players.</b> ${joined} of ${need} people have joined.</p><p class="sub">${roster}</p><p class="sub">Others open Strand on their phones, with the same table code, and tap Join.</p>${d.seats[0]===net.me?'<button class="btn" data-do="cancelHost">Cancel game</button>':''}`;
+      else inner=`<p><b>${esc(d.names[0]||'Someone')}</b> is hosting a game. ${joined} of ${need} people have joined.</p><p class="sub">${roster}</p><label class="field" for="jn">Your name<input id="jn" placeholder="Player" maxlength="14" autocomplete="off"></label><button class="btn primary wide" data-do="join" style="margin-top:10px">Join game</button>`;
+    }
+    else if(st==='play'&&d.g)inner=`<p>${d.g.players.map(p=>esc(p.name)).join(', ')} are playing, moon ${d.g.moon}.</p>${d.seats.includes(net.me)?'':'<div class="row"><button class="btn" data-do="watch">Watch</button><button class="btn" data-do="newgame">End it and start over</button></div>'}`;
+    else inner=`<label class="field" for="hn">Your name<input id="hn" placeholder="Player 1" maxlength="14" autocomplete="off"></label>
+      <div class="pick"><span>People, including you</span>${seg('op',[2,3,4,5],S.op)}</div>
+      <div class="pick"><span>Computer players</span>${seg('ob',[0,1,2,3],S.ob,v=>S.op+v>5)}</div>
+      <button class="btn primary wide" data-do="host" style="margin-top:12px">Host a game</button><p class="sub" style="margin-top:8px">Then each other person opens this page on their phone and taps Join. Seats are drawn at random. House rules from Settings apply.</p>`;
+  }
+  return `<section class="box"><h2>Each on their own phone</h2>${inner}</section>`;
+}
+
+/* ---------- boot ---------- */
+function start(data){
+  if(data&&data.G&&data.G.v===2){G=data.G;mode='local';ui.screen='game';ui.view='board';ui.lastFx=G.seq}else ui.screen='home';
+  render();initNet();if(G)runBots();
+}
+if(typeof window!=='undefined'&&typeof document!=='undefined'&&document.getElementById('app')){
+  const boot=()=>{try{if(window.claude&&window.claude.hot&&window.claude.hot.snapshot)window.claude.hot.snapshot(()=>mode==='local'&&G?{G}:{})}catch(e){}
+    if(window.claude&&window.claude.hot&&window.claude.hot.ready)window.claude.hot.ready(start);else start(null)};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+}
+
+</script>
+<script>
+(function(){
+  /* Parlor: a small way home when a game was opened from the installed Parlor app */
+  var standalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone;
+  var from=false;try{from=sessionStorage.getItem('fg_from')==='1'}catch(e){}
+  if(standalone&&from){
+    var b=document.createElement('a');b.href='../';b.setAttribute('aria-label','Back to Parlor');
+    b.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>';
+    b.style.cssText='position:fixed;z-index:2147483000;left:6px;top:50%;width:30px;height:44px;margin-top:-22px;border-radius:0 12px 12px 0;display:flex;align-items:center;justify-content:center;background:rgba(30,22,15,.55);color:#fff;text-decoration:none;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:.75;left:0';
+    document.body.appendChild(b);
+  }
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('../sw.js',{scope:'../'}).catch(function(){});
+})();
+</script></body>
+</html>
