@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Parlor</title>
+<meta name="description" content="Family game night: chess, Spades, Setback and island and farm games, on any phone.">
+<meta name="theme-color" content="#241911">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Parlor">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/parlor-180.png">
+<link rel="icon" type="image/png" href="icons/parlor-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Figtree:wght@400;600;700&display=swap">
+<script src="config.js"></script>
+<style>
+:root{
+  --bg:#f3ecdf; --bg2:#eadfcb; --card:#fffaf1; --ink:#2a1d14; --muted:#6f5d4c; --line:#dccdb4;
+  --accent:#a8461f; --accent-ink:#fff7ee; --ok:#2f7a4b; --warn:#a8461f; --shadow:0 1px 0 rgba(60,40,20,.06),0 6px 18px -10px rgba(60,40,20,.35);
+  --display:'Fraunces',Georgia,'Times New Roman',serif; --body:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1b140e; --bg2:#241a12; --card:#2a2017; --ink:#f1e6d3; --muted:#b9a68f; --line:#3d2f22;
+  --accent:#e38b5a; --accent-ink:#22160d; --ok:#79c793; --shadow:0 1px 0 rgba(0,0,0,.3),0 8px 22px -12px rgba(0,0,0,.8); color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1b140e; --bg2:#241a12; --card:#2a2017; --ink:#f1e6d3; --muted:#b9a68f; --line:#3d2f22;
+  --accent:#e38b5a; --accent-ink:#22160d; --ok:#79c793; --shadow:0 1px 0 rgba(0,0,0,.3),0 8px 22px -12px rgba(0,0,0,.8); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg)}
+body{color:var(--ink);font:16px/1.45 var(--body);-webkit-tap-highlight-color:transparent;
+  background:radial-gradient(120% 60% at 50% -10%,var(--bg2),var(--bg) 60%) fixed}
+main{max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 28px) 16px calc(env(safe-area-inset-bottom,0px) + 40px)}
+header{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+header img{width:52px;height:52px;border-radius:13px;box-shadow:var(--shadow)}
+h1{font:800 34px/1 var(--display);letter-spacing:-.01em;margin:0}
+.lede{color:var(--muted);margin:10px 0 22px;font-size:15px}
+h2{font:600 13px/1 var(--body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:28px 4px 10px}
+.games{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.game{display:flex;align-items:center;gap:14px;padding:12px 14px 12px 12px;background:var(--card);border:1px solid var(--line);border-radius:18px;
+  color:inherit;text-decoration:none;box-shadow:var(--shadow);transition:transform .12s ease}
+.game:active{transform:scale(.985)}
+.game img{width:62px;height:62px;border-radius:15px;flex:none}
+.game b{display:block;font:700 19px/1.15 var(--display)}
+.game span{display:block;color:var(--muted);font-size:14px;line-height:1.3;margin-top:2px}
+.game small{display:block;color:var(--muted);font-size:12.5px;margin-top:4px;font-weight:600}
+.game .go{margin-left:auto;flex:none;width:22px;height:22px;color:var(--muted)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+.panel p{margin:0 0 10px;font-size:14.5px}
+.panel p.sub{color:var(--muted);font-size:13.5px}
+.tablecode{display:flex;align-items:center;gap:10px;margin:2px 0 12px}
+.tablecode code{font:700 22px/1 var(--display);letter-spacing:.02em}
+.status{font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
+.status i{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.status.ok i{background:var(--ok)} .status.bad i{background:var(--warn)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+button,.btn{font:600 15px var(--body);min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+input{font:600 17px var(--body);min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+.edit{display:none;gap:8px;margin-top:4px}.edit.on{display:flex}
+.install{display:none}.install.on{display:block}
+.steps{margin:6px 0 0;padding-left:20px;font-size:14px}
+.steps li{margin:3px 0}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+footer{color:var(--muted);font-size:12.5px;text-align:center;margin-top:28px}
+</style>
+</head>
+<body>
+<main>
+  <header><img src="icons/parlor-192.png" alt=""><h1>Parlor</h1></header>
+  <p class="lede">Family game night. Play on one phone, or each on your own, with computers filling any empty seats.</p>
+
+  <ul class="games" id="games"></ul>
+
+  <h2>Playing together</h2>
+  <section class="panel">
+    <p>Your table code</p>
+    <div class="tablecode"><code id="code">home</code><span class="status" id="status"><i></i><span>Checking…</span></span></div>
+    <p class="sub">Phones with the same table code see the same online games. Send the invite link to family so they join your table.</p>
+    <div class="row">
+      <button class="primary" id="invite">Send invite link</button>
+      <button id="change">Change code</button>
+    </div>
+    <div class="edit" id="edit"><input id="newcode" maxlength="24" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="New table code"><button class="primary" id="save">Save</button></div>
+  </section>
+
+  <section class="install" id="install">
+    <h2>Make it an app</h2>
+    <div class="panel">
+      <p>Put Parlor, or any single game, on your Home Screen:</p>
+      <ol class="steps"><li>Open the page in Safari.</li><li>Tap the Share button.</li><li>Tap <b>Add to Home Screen</b>.</li></ol>
+      <p class="sub" style="margin-top:10px">Each game has its own icon too. Open the game first, then add it the same way.</p>
+    </div>
+  </section>
+  <footer>Games against the computer work offline once opened.</footer>
+</main>
+<div class="toast" id="toast" role="status"></div>
+<script>
+const GAMES=[
+  {id:'tempo',name:'Tempo',line:'Chess. Two phones, one board, or the computer at 16 levels.',meta:'2 players'},
+  {id:'strand',name:'Strand',line:'Island, family and feasts. Our own game.',meta:'2–5 players · 40 min'},
+  {id:'furrow',name:'Furrow',line:'Grow a farm and a family over 14 rounds.',meta:'1–5 players · 45 min'},
+  {id:'atoll',name:'Atoll',line:'Settle, trade and build across an island.',meta:'2–6 players · 45 min'},
+  {id:'spades',name:'Midnight Spades',line:'Partnership Spades with nil and bags.',meta:'4 seats'},
+  {id:'setback',name:'Setback Tavern',line:'Connecticut Setback, played to 21.',meta:'4 seats'}];
+const $=id=>document.getElementById(id);
+const store={get(k){for(const s of['localStorage','sessionStorage']){try{const v=window[s].getItem(k);if(v)return v}catch(e){}}return null},
+  set(k,v){for(const s of['localStorage','sessionStorage']){try{window[s].setItem(k,v)}catch(e){}}}};
+const clean=c=>String(c||'').toLowerCase().replace(/[^a-z0-9-]/g,'').slice(0,24);
+const qs=new URLSearchParams(location.search);
+let table=clean(qs.get('table'));if(table)store.set('fg_table',table);
+table=table||clean(store.get('fg_table'))||clean((window.FAMILY_CONFIG||{}).table)||'home';
+$('code').textContent=table;
+const arrow='<svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+$('games').innerHTML=GAMES.map(g=>`<li><a class="game" href="${g.id}/" data-id="${g.id}"><img src="icons/${g.id}-192.png" alt=""><div><b>${g.name}</b><span>${g.line}</span><small>${g.meta}</small></div>${arrow}</a></li>`).join('');
+$('games').addEventListener('click',()=>{try{sessionStorage.setItem('fg_from','1')}catch(e){}});
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2200)}
+const inviteURL=()=>{const u=new URL(location.href);u.search='?table='+encodeURIComponent(table);u.hash='';return u.toString()};
+$('invite').onclick=async()=>{const url=inviteURL();
+  if(navigator.share){try{await navigator.share({title:'Parlor',text:'Join our family game table:',url});return}catch(e){if(e&&e.name==='AbortError')return}}
+  try{await navigator.clipboard.writeText(url);toast('Invite link copied')}catch(e){prompt('Copy this link:',url)}};
+$('change').onclick=()=>{$('edit').classList.toggle('on');$('newcode').value=table;$('newcode').focus()};
+$('save').onclick=()=>{const c=clean($('newcode').value);if(!c){toast('Use letters and numbers');return}
+  table=c;store.set('fg_table',c);$('code').textContent=c;$('edit').classList.remove('on');toast('Table code saved')};
+const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+if(!standalone&&/iPhone|iPad|iPod/.test(navigator.userAgent))$('install').classList.add('on');
+const st=$('status');
+const cfg=(window.FAMILY_CONFIG||{}).firebase;
+if(!cfg||!cfg.databaseURL){st.className='status bad';st.lastChild.textContent='Online play not set up yet'}
+else if(!navigator.onLine){st.className='status bad';st.lastChild.textContent='Offline'}
+else{st.className='status ok';st.lastChild.textContent='Online play ready'}
+addEventListener('offline',()=>{st.className='status bad';st.lastChild.textContent='Offline'});
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
