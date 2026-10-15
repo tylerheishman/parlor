@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
-"""Assemble the standalone Parlor site into ./site from the six game files.
-Usage: build.py [--config config.js]   (config.js holds window.FAMILY_CONFIG)"""
+"""Rebuild the Parlor website (the repo root) from the six games in dev/games.
+Usage: python3 dev/build.py [--config dev/config.js] [--out DIR]
+The output folder gets index.html, config.js, shim.js, sw.js, lib/, icons/ and one folder per game.
+Nothing else in it is touched (dev/, README.md and .git stay as they are)."""
 import json, os, re, shutil, sys, hashlib
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-SP = os.path.dirname(ROOT)
-OUT = os.path.join(ROOT, 'site')
+SP = ROOT
+OUT = os.path.dirname(ROOT)
 GAMES = [
     # id, source, name, short name, theme color, background color
-    ('tempo', 'games/chess/tempo.html', 'Tempo', 'Tempo', '#1d5a43', '#e6ebe3'),
-    ('strand', 'games/hybrid/strand.html', 'Strand', 'Strand', '#0f3a44', '#efe6d4'),
-    ('furrow', 'furrow.html', 'Furrow', 'Furrow', '#3f5a2b', '#e4e8d8'),
-    ('atoll', 'games/isles/atoll.html', 'Atoll', 'Atoll', '#0f4c5c', '#cfe6e4'),
-    ('spades', 'games/spades/spades.html', 'Midnight Spades', 'Spades', '#0b1730', '#070f22'),
-    ('setback', 'games/setback/setback.html', 'Setback Tavern', 'Setback', '#3d2819', '#2e1d12'),
+    ('tempo', 'games/tempo.html', 'Tempo', 'Tempo', '#1d5a43', '#e6ebe3'),
+    ('strand', 'games/strand.html', 'Strand', 'Strand', '#0f3a44', '#efe6d4'),
+    ('furrow', 'games/furrow.html', 'Furrow', 'Furrow', '#3f5a2b', '#e4e8d8'),
+    ('atoll', 'games/atoll.html', 'Atoll', 'Atoll', '#0f4c5c', '#cfe6e4'),
+    ('spades', 'games/spades.html', 'Midnight Spades', 'Spades', '#0b1730', '#070f22'),
+    ('setback', 'games/setback.html', 'Setback Tavern', 'Setback', '#3d2819', '#2e1d12'),
 ]
 NOCONN = "Online play is not available right now. Check your internet connection, then reload."
 TEXT = {
@@ -62,14 +64,15 @@ def manifest(name, short, start, scope, icon_base, theme, bg):
 
 
 def build(config_path):
-    if os.path.exists(OUT):
-        shutil.rmtree(OUT)
+    for d in ['lib', 'icons'] + [g[0] for g in GAMES]:
+        if os.path.exists(os.path.join(OUT, d)):
+            shutil.rmtree(os.path.join(OUT, d))
     os.makedirs(OUT + '/lib'); os.makedirs(OUT + '/icons')
     for f in os.listdir(ROOT + '/icons'):
-        if f.endswith('.png') and f != 'sheet.png':
+        if f.endswith('.png'):
             shutil.copy(ROOT + '/icons/' + f, OUT + '/icons/' + f)
     for f in ('firebase-app-compat.js', 'firebase-database-compat.js'):
-        shutil.copy(ROOT + '/emu/node_modules/firebase/' + f, OUT + '/lib/' + f)
+        shutil.copy(ROOT + '/lib/' + f, OUT + '/lib/' + f)
     shutil.copy(ROOT + '/src/shim.js', OUT + '/shim.js')
     shutil.copy(config_path, OUT + '/config.js')
     shutil.copy(ROOT + '/src/portal.html', OUT + '/index.html')
@@ -116,11 +119,9 @@ def build(config_path):
         files += [f'{gid}/', f'{gid}/manifest.webmanifest']
 
     digest = hashlib.sha1()
-    for f in sorted(os.listdir(OUT)):
-        pass
-    for dp, dn, fn in os.walk(OUT):
-        for f in sorted(fn):
-            digest.update(open(os.path.join(dp, f), 'rb').read())
+    for rel in files:
+        fp = os.path.join(OUT, rel + ('index.html' if rel.endswith('/') else ''))
+        digest.update(open(fp, 'rb').read())
     sw = open(ROOT + '/src/sw.js').read().replace('__VERSION__', digest.hexdigest()[:10]).replace('__FILES__', json.dumps(files))
     open(OUT + '/sw.js', 'w').write(sw)
     print('built', OUT, 'version', digest.hexdigest()[:10])
@@ -128,4 +129,6 @@ def build(config_path):
 
 if __name__ == '__main__':
     cfg = sys.argv[sys.argv.index('--config') + 1] if '--config' in sys.argv else ROOT + '/config.js'
+    if '--out' in sys.argv:
+        OUT = os.path.abspath(sys.argv[sys.argv.index('--out') + 1])
     build(cfg)
