@@ -1,6 +1,6 @@
 /* Parlor service worker: keeps the games available offline.
    Pages and files: network first (so updates show up), cached copy when offline. */
-const CACHE = 'parlor-53de926fdb';
+const CACHE = 'parlor-e005a8579e';
 const FILES = ["./", "index.html", "manifest.webmanifest", "config.js", "shim.js", "lib/firebase-app-compat.js", "lib/firebase-database-compat.js", "icons/atoll-180.png", "icons/atoll-192.png", "icons/atoll-512.png", "icons/bridge-180.png", "icons/bridge-192.png", "icons/bridge-512.png", "icons/furrow-180.png", "icons/furrow-192.png", "icons/furrow-512.png", "icons/parlor-180.png", "icons/parlor-192.png", "icons/parlor-512.png", "icons/setback-180.png", "icons/setback-192.png", "icons/setback-512.png", "icons/spades-180.png", "icons/spades-192.png", "icons/spades-512.png", "icons/strand-180.png", "icons/strand-192.png", "icons/strand-512.png", "icons/tempo-180.png", "icons/tempo-192.png", "icons/tempo-512.png", "tempo/", "tempo/manifest.webmanifest", "strand/", "strand/manifest.webmanifest", "furrow/", "furrow/manifest.webmanifest", "atoll/", "atoll/manifest.webmanifest", "spades/", "spades/manifest.webmanifest", "setback/", "setback/manifest.webmanifest", "bridge/", "bridge/manifest.webmanifest"];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => Promise.all(FILES.map(f => c.add(f).catch(() => null)))).then(() => self.skipWaiting()));

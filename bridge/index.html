@@ -356,6 +356,31 @@ b.bl{font-weight:800;text-decoration:underline;text-decoration-color:var(--brass
 .sbtop span{text-align:center}
 .log li.contract,.log li.score,.log li.game,.log li.end{font-weight:600}.log li.call{color:var(--ink-2)}
 .deco{height:140px}
+
+/* review, reactions, large cards */
+.rv{background:var(--panel-2);border-radius:14px;padding:4px 12px 8px;margin:10px 0}
+.rvh{font:400 17px var(--display);margin:8px 0 4px}
+.rvs{margin:4px 0 6px;font-size:14.5px;line-height:1.4}
+.rvl{list-style:none;margin:0 0 6px;padding:0;display:flex;flex-direction:column;gap:5px;font-size:14px}
+.rvl li{background:var(--panel);border-radius:9px;padding:6px 9px;line-height:1.3}
+.rvl li b{color:var(--brass);margin-right:3px}
+.cdt{font:400 15px var(--rank);white-space:nowrap}.cdt.red{color:var(--red)}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--brass);border-radius:50%;margin-right:6px;vertical-align:-1px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rxb{position:absolute;top:-30px;left:50%;transform:translateX(-50%);font-size:30px;line-height:1;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 7px;box-shadow:0 8px 18px -8px var(--shadow);animation:pop .3s cubic-bezier(.2,1.6,.4,1);z-index:9;pointer-events:none}
+.seat .av{position:relative}.mebar .av{position:relative}
+.mebar .av .rxb{top:-44px}
+@keyframes pop{from{transform:translateX(-50%) scale(.3);opacity:0}}
+.ib.rx{width:38px;height:38px;font-size:20px;flex:none}
+.rxgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:6px 0 12px}
+.rxbtn{height:58px;font-size:30px;border-radius:14px;background:var(--panel-2);border:1px solid var(--line)}
+.rxbtn:active{transform:scale(.92)}
+html.big .card .ix b{font-size:25px}html.big .card .ix .su{width:16px;height:16px}html.big .card .ix{width:24px}
+html.big .drow{font-size:18px;min-height:25px}html.big .ds{width:14px;height:14px}
+html.big .dc b{font-size:20px}html.big .dc .su{width:14px;height:14px}
+html.big .st{font-size:16px}html.big .ac{font-size:16px}html.big .cb{font-size:19px}
+html.big .lv{font-size:24px}html.big .sb{font-size:29px}html.big .xb{font-size:15.5px}
+html.big .sheet{font-size:17px}html.big .rvs,html.big .rvl{font-size:16px}
 @media (max-height:740px){.auc{top:104px}.ac{height:22px}.ah{padding-bottom:3px}.lv,.xb{height:38px}.sb{height:40px}.bph{padding:0 4px 6px}.lvrow,.srow,.xrow{margin-bottom:5px}.bp{padding:9px 10px;bottom:5px}.bp .btn.wide{min-height:42px;padding:6px}.aexp{font-size:12px;padding:4px 6px}}
 @media (max-height:700px){.dc{height:58px}.dcol{width:44px}.dc{width:44px}}
 </style>
@@ -380,7 +405,7 @@ const isBid=c=>typeof c==='number';
 const bidText=b=>bidLevel(b)+STRSYM[bidStrain(b)];
 const callText=c=>c==='P'?'Pass':c==='X'?'Double':c==='XX'?'Redouble':bidText(c);
 const callShort=c=>c==='P'?'Pass':c==='X'?'X':c==='XX'?'XX':bidText(c);
-const DEFAULT_OPTS={scoring:'rubber',honors:true,lastTrick:true};
+const DEFAULT_OPTS={scoring:'rubber',honors:true,lastTrick:true,open:false,speed:'normal'};
 let RNG=Math.random;
 function shuffle(a,rng){rng=rng||RNG;for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));const t=a[i];a[i]=a[j];a[j]=t}return a}
 const teamOf=p=>p&1,partnerOf=p=>(p+2)&3;
@@ -408,6 +433,7 @@ function startDeal(G,deck,first,redeal){
 }
 function addLog(G,m,k){G.seq++;G.log.push({s:G.seq,h:G.hn,m,k:k||''});if(G.log.length>500)G.log.splice(0,G.log.length-500)}
 function isVul(G,t){
+  if(G.opts.practice)return !!G.opts.practice.vul[t];
   if(G.opts.scoring==='chicago'){const d=((G.cdeal-1)%4)+1;return d===4||((d===2||d===3)&&teamOf(G.dealer)===t)}
   return G.games[t]>0;
 }
@@ -445,6 +471,7 @@ function applyCall(G,p,c){
 function finishAuction(G){
   const st=auctionState(G.auction);
   if(st.hi<0){
+    if(G.opts.practice){addLog(G,'All four pass.','pass');G.lastHand={hn:G.hn,passed:true};endSession(G);return}
     addLog(G,'All four pass. The cards are dealt again.','pass');
     G.lastHand={hn:G.hn,passed:true};
     startDeal(G,null,false,G.opts.scoring==='chicago');return;
@@ -488,6 +515,14 @@ function playCard(G,p,c){
     if(G.trickNo===13)endDeal(G);
   }
 }
+// A player gives the rest of the tricks to the other side.
+function concedeRest(G,p){
+  if(G.phase!=='play')throw new Error('not in play');
+  const left=13-G.trickNo,t=1-teamOf(p);
+  G.tricks[t]+=left;G.trickNo=13;G.trick=[];G.hands=[[],[],[],[]];
+  addLog(G,`${G.players[p].name} gives up the last ${left} trick${left>1?'s':''}.`,'claim');
+  endDeal(G);
+}
 // Declarer may claim the rest when the claim is certain (checked by the engine, see canClaim).
 function claimRest(G,p){
   const c=G.contract;if(G.phase!=='play'||p!==c.decl)throw new Error('only declarer claims');
@@ -528,10 +563,14 @@ function endDeal(G){
   const hon=G.opts.honors?honorsOf(G.orig,c.strain):null;
   const before=G.total.slice(),gamesBefore=G.games.slice(),belowBefore=G.below.slice();
   const rec={hn:G.hn,dealer:G.dealer,contract:Object.assign({},c),took,r,vul:[isVul(G,0),isVul(G,1)],orig:G.orig.map(h=>h.slice()),
-    auction:G.auction.slice(),hon,before,cdeal:G.cdeal,game:false,rubber:false};
+    auction:G.auction.slice(),hon,before,cdeal:G.cdeal,game:false,rubber:false,played:G.played.map(t=>({l:t.l,c:t.c.slice(),w:t.w}))};
   const nm=G.players[c.decl].name,ct=contractText(c);
   if(r.made)addLog(G,`${nm} makes ${ct}${r.diff?` with ${r.diff} overtrick${r.diff>1?'s':''}`:''}.`,'score');
   else addLog(G,`${nm} goes down ${-r.diff} in ${ct}.`,'score');
+  if(G.opts.practice){
+    if(r.made)addLine(G,dt,r.below+r.over+r.insult+r.slam,false,'practice');else addLine(G,ot,r.under,false,'practice');
+    rec.after=G.total.slice();rec.games=G.games.slice();G.history.push(rec);G.lastHand=rec;endSession(G);return;
+  }
   if(G.opts.scoring==='chicago'){
     if(r.made){
       const gb=r.below>=100?(vul?500:300):50;
@@ -1351,7 +1390,7 @@ function genMoves(S,p){
   if(S.tn){const led=(S.tc[0]/13)|0;if(H[b+led])suits=[led]}
   const out=[];
   for(const s of suits){let x=H[b+s];if(!x)continue;
-    const others=(H[s]|H[4+s]|H[8+s]|H[12+s])&~x;
+    let others=(H[s]|H[4+s]|H[8+s]|H[12+s])&~x;for(let i=0;i<S.tn;i++)if(((S.tc[i]/13)|0)===s)others|=1<<(S.tc[i]%13);
     let prevTop=-2;
     while(x){const r=hiBit(x);x&=~(1<<r);
       if(prevTop>=0&&!(others&((1<<prevTop)-1)&~((1<<(r+1))-1)))continue; // equivalent to the card above it
@@ -1372,7 +1411,7 @@ function ab(S,alpha,beta){
   for(const m of moves){
     const s=(m/13)|0,bit=1<<(m-s*13),idx=(p<<2)+s,tn=S.tn;
     S.H[idx]&=~bit;S.tp[tn]=p;S.tc[tn]=m;S.tn=tn+1;let v;
-    if(tn===3){const w=trickWin(S),won=(w&1)===S.dt?1:0;S.tn=0;S.turn=w;S.left--;v=won+ab(S,alpha-won,beta-won);S.left++}
+    if(tn===3){const w=trickWin(S),won=(w&1)===S.dt?1:0,sp=S.tp.slice(),sc=S.tc.slice();S.tn=0;S.turn=w;S.left--;v=won+ab(S,alpha-won,beta-won);S.left++;S.tp.set(sp);S.tc.set(sc)}
     else{S.turn=(p+1)&3;v=ab(S,alpha,beta)}
     S.tn=tn;S.turn=p;S.H[idx]|=bit;
     if(max){if(v>best)best=v;if(best>alpha)alpha=best}else{if(v<best)best=v;if(best<beta)beta=best}
@@ -1446,7 +1485,8 @@ function distinctMoves(cands,A,view){
   const own=masksOf(view.turn===view.me?view.hand:view.dummyHand),seen=[0,0,0,0];
   for(const k of A.known)if(k)for(let s=0;s<4;s++)seen[s]|=k[s];
   const out=[],by=[[],[],[],[]];for(const c of cands)by[sOf(c)].push(c);
-  for(let s=0;s<4;s++){const l=by[s].sort((a,b)=>b-a),others=(A.unseen[s]|seen[s])&~own[s];let prev=-1;
+  const inTrick=[0,0,0,0];for(const x of view.trick)inTrick[sOf(x.c)]|=1<<rOf(x.c);
+  for(let s=0;s<4;s++){const l=by[s].sort((a,b)=>b-a),others=((A.unseen[s]|seen[s])&~own[s])|inTrick[s];let prev=-1;
     for(const c of l){const r=rOf(c);if(prev>=0&&!(others&((1<<prev)-1)&~((1<<(r+1))-1)))continue;out.push(c);prev=r}}
   return out;
 }
@@ -1509,6 +1549,156 @@ function canClaim(G){
 }
 
 
+/* ================= DOUBLE-DUMMY SOLVER ================= */
+// Exact tricks with all four hands known. Alpha-beta with a transposition table on positions
+// reduced to relative ranks, quick-trick bounds and winner-first move ordering.
+// State: H[p*4+s] rank masks (bit r = rank r, 0='2'..12='A'), T trump (4 = notrump).
+function ddFactory(){
+  const hb=m=>31-Math.clz32(m),lb=m=>31-Math.clz32(m&-m);
+  function pc(x){x=x-((x>>>1)&0x55555555);x=(x&0x33333333)+((x>>>2)&0x33333333);return(((x+(x>>>4))&0x0F0F0F0F)*0x01010101)>>>24}
+  function make(hands,T,leader,cur){
+    const H=new Int32Array(16);for(let p=0;p<4;p++)for(const c of hands[p])H[p*4+((c/13)|0)]|=1<<(c%13);
+    const S={H,T,turn:leader,tn:0,tp:new Int8Array(4),tc:new Int8Array(4),left:hands[leader].length,nodes:0,maxNodes:Infinity,TT:new Map(),hist:new Int32Array(208)};
+    if(cur&&cur.length){for(let i=0;i<cur.length;i++){S.tp[i]=(leader+i)&3;S.tc[i]=cur[i]}S.tn=cur.length;S.turn=(leader+cur.length)&3;S.left=hands[leader].length+1}
+    return S;
+  }
+  // position key in relative ranks: only the order of the remaining cards in each suit matters
+  function key(S){
+    const H=S.H;let k=S.turn+'';
+    for(let s=0;s<4;s++){
+      const all=H[s]|H[4+s]|H[8+s]|H[12+s];let code=0,i=0,x=all;
+      // owner of each remaining card from high to low, 2 bits each
+      while(x){const r=hb(x);x&=~(1<<r);const b=1<<r;const o=(H[4+s]&b)?1:(H[8+s]&b)?2:(H[12+s]&b)?3:0;code=code*4+o;i++}
+      k+='|'+i.toString(36)+':'+code.toString(36);
+    }
+    return k;
+  }
+  function winner(S){
+    const T=S.T;let wp=S.tp[0],wc=S.tc[0],ws=(wc/13)|0;
+    for(let i=1;i<4;i++){const x=S.tc[i],xs=(x/13)|0;if((xs===ws&&x>wc)||(xs===T&&ws!==T)){wc=x;ws=xs;wp=S.tp[i]}}
+    return wp;
+  }
+  // tricks the side on lead can take at once with top cards from the leader's hand
+  function quick(S){
+    const H=S.H,p=S.turn,T=S.T,o1=(p+1)&3,o2=(p+3)&3,pp=(p+2)&3;
+    const oppT=T<4?(H[o1*4+T]|H[o2*4+T]):0;
+    let q=0;
+    for(let s=0;s<4;s++){
+      const mine=H[p*4+s];if(!mine)continue;
+      const others=(H[o1*4+s]|H[o2*4+s]|H[pp*4+s]);
+      let k=0,x=mine,top=hb(mine|others);
+      while(x&&hb(x)===top){k++;x&=~(1<<top);const rest=x|others;if(!rest)break;top=hb(rest)}
+      if(!k)continue;
+      if(T<4&&s!==T&&oppT){const l1=pc(H[o1*4+s]),l2=pc(H[o2*4+s]);k=Math.min(k,Math.min(H[o1*4+T]?l1:13,H[o2*4+T]?l2:13))}
+      q+=k;
+    }
+    return Math.min(q,S.left);
+  }
+  function moves(S,p,pref){
+    const H=S.H,b=p*4,T=S.T;let suits=[0,1,2,3];
+    if(S.tn){const led=(S.tc[0]/13)|0;if(H[b+led])suits=[led]}
+    const out=[];
+    for(const s of suits){let x=H[b+s];if(!x)continue;
+      let others=(H[s]|H[4+s]|H[8+s]|H[12+s])&~x;for(let i=0;i<S.tn;i++)if(((S.tc[i]/13)|0)===s)others|=1<<(S.tc[i]%13);let prev=-2;
+      while(x){const r=hb(x);x&=~(1<<r);
+        if(prev>=0&&!(others&((1<<prev)-1)&~((1<<(r+1))-1)))continue;
+        out.push(s*13+r);prev=r}}
+    if(out.length<2)return out;
+    const hist=S.hist,hb0=p*52;
+    // ordering: when following, cheapest winner first then lowest; when leading, top cards first
+    if(S.tn){
+      let wp=S.tp[0],wc=S.tc[0],ws=(wc/13)|0;
+      for(let i=1;i<S.tn;i++){const x=S.tc[i],xs=(x/13)|0;if((xs===ws&&x>wc)||(xs===T&&ws!==T)){wc=x;ws=xs;wp=S.tp[i]}}
+      const partnerWins=(wp&1)===(p&1);
+      const beats=c=>{const s=(c/13)|0;return (s===ws&&c>wc)||(s===T&&ws!==T)};
+      const sc=c=>{const r=c%13;return (c===pref?1e9:0)+(partnerWins?-r:beats(c)?100-r:-r)*1e5+hist[hb0+c]};
+      out.sort((a,b)=>sc(b)-sc(a));
+    }else{
+      const sc=c=>{const s=(c/13)|0,r=c%13,all=H[s]|H[4+s]|H[8+s]|H[12+s];return (c===pref?1e9:0)+(hb(all)===r?5e6:0)+hist[hb0+c]*4+r};
+      out.sort((a,b)=>sc(b)-sc(a));
+    }
+    return out;
+  }
+  // future tricks for the side `side` (0/1)
+  function search(S,side,alpha,beta){
+    if(++S.nodes>S.maxNodes)throw new Error('budget');
+    if(S.left===0)return 0;
+    const p=S.turn,maxi=(p&1)===side;
+    let key0=null,a0=alpha,b0=beta,pref=-1;
+    if(S.tn===0){
+      const q=quick(S);
+      if(maxi){if(q>=beta)return q;if(q>alpha)alpha=q}
+      else{const ub=S.left-q;if(ub<=alpha)return ub;if(ub<beta)beta=ub}
+      if(alpha>=beta)return alpha;
+      key0=key(S);const e=S.TT.get(key0);
+      if(e){if(e[0]>=beta)return e[0];if(e[1]<=alpha)return e[1];if(e[0]>alpha)alpha=e[0];if(e[1]<beta)beta=e[1];if(alpha>=beta)return alpha;
+        if(e[2]>=0){const s=e[2],all=S.H[s]|S.H[4+s]|S.H[8+s]|S.H[12+s];let x=all,i=0,r=-1;while(x){const t=hb(x);x&=~(1<<t);if(i===e[3]){r=t;break}i++}if(r>=0&&(S.H[p*4+s]>>r&1))pref=s*13+r}}
+    }
+    const ms=moves(S,p,pref);let best=maxi?-1:99,bm=-1;
+    for(const m of ms){
+      const s=(m/13)|0,bit=1<<(m%13),idx=p*4+s,tn=S.tn;
+      S.H[idx]&=~bit;S.tp[tn]=p;S.tc[tn]=m;S.tn=tn+1;let v;
+      if(tn===3){const w=winner(S),won=(w&1)===side?1:0,sp=S.tp.slice(),sc=S.tc.slice();S.tn=0;S.turn=w;S.left--;v=won+search(S,side,alpha-won,beta-won);S.left++;S.tp.set(sp);S.tc.set(sc)}
+      else{S.turn=(p+1)&3;v=search(S,side,alpha,beta)}
+      S.tn=tn;S.turn=p;S.H[idx]|=bit;
+      if(maxi){if(v>best){best=v;bm=m}if(best>alpha)alpha=best}else{if(v<best){best=v;bm=m}if(best<beta)beta=best}
+      if(alpha>=beta){S.hist[p*52+m]+=S.left*S.left;break}
+    }
+    if(key0){const e=S.TT.get(key0)||[0,99,-1,0];if(best<=a0)e[1]=Math.min(e[1],best);else if(best>=b0)e[0]=Math.max(e[0],best);else{e[0]=best;e[1]=best}
+      if(bm>=0){const s=(bm/13)|0,r=bm%13,all=S.H[s]|S.H[4+s]|S.H[8+s]|S.H[12+s];e[2]=s;e[3]=pc(all>>>(r+1))}
+      S.TT.set(key0,e)}
+    return best;
+  }
+  // max tricks for `side` from a state (null-window steps around a guess)
+  function solve(S,side,guess){
+    let lo=0,hi=S.left,g=guess==null?(S.left>>1):Math.max(0,Math.min(S.left,guess));
+    while(lo<hi){
+      const t=Math.max(lo+1,Math.min(hi,g));
+      const v=search(S,side,t-1,t);
+      if(v>=t){lo=t;g=t+1}else{hi=t-1;g=t-1}
+      if(S.TT.size>1500000)S.TT=new Map();
+    }
+    return lo;
+  }
+  // Review of a played deal. vals[t] = tricks declarer's side ends with under perfect play from the
+  // start of trick t (null if the search ran out of budget). errs lists the cards that changed it:
+  // d<0 means the side that played the card lost a trick by it (seen from declarer's side: d is the change).
+  function review(orig,strain,decl,played,budget){
+    const side=decl&1,vals=[],errs=[],n=played.length;
+    const handsAt=[],leaders=[],wons=[];let hands=orig.map(h=>h.slice()),leader=(decl+1)%4,won=0;
+    for(let t=0;t<=n;t++){
+      handsAt.push(hands.map(h=>h.slice()));leaders.push(leader);wons.push(won);
+      if(t===n)break;
+      const tr=played[t];
+      for(let i=0;i<4;i++){const p=(tr.l+i)%4;hands[p].splice(hands[p].indexOf(tr.c[i]),1)}
+      if((tr.w&1)===side)won++;leader=tr.w;
+    }
+    const val=(t,cur)=>{
+      if(13-t===0)return wons[t];
+      const hs=handsAt[t].map(h=>h.slice());
+      for(let i=0;i<(cur?cur.length:0);i++){const p=(leaders[t]+i)%4;hs[p].splice(hs[p].indexOf(cur[i]),1)}
+      const S=make(hs,strain,leaders[t],cur);const left=13-t;S.maxNodes=left>=12?budget:Infinity;
+      try{return wons[t]+solve(S,side)}catch(e){return null}};
+    vals[0]=null;
+    for(let t=n;t>=1;t--)vals[t]=t===13?wons[13]:(t===n&&n<13?null:val(t));
+    // trick 1: judge cards 2-4 against the position after the opening lead
+    const firstVals=n?[null,val(0,played[0].c.slice(0,1))]:[];
+    for(let t=0;t<n;t++){
+      let prev=t===0?firstVals[1]:vals[t],k0=t===0?2:1;
+      const end=vals[t+1];if(prev==null||end==null||prev===end)continue;
+      const tr=played[t];
+      for(let k=k0;k<=4;k++){
+        const v=k===4?end:val(t,tr.c.slice(0,k));if(v==null)break;
+        if(v!==prev){const p=(tr.l+k-1)%4;errs.push({t,p,c:tr.c[k-1],d:v-prev});prev=v}
+      }
+    }
+    return {vals,errs,afterLead:firstVals[1]};
+  }
+  return {make,solve,review,quick,key};
+}
+const DD=ddFactory();
+
+
 /* ================= APP ================= */
 const GAME='Sunday Bridge',SAVEKEY='sbridge-save-1',PREFKEY='sbridge-prefs-1';
 const BOTNAMES=['Ada','Rex','Lou','Fay','Gus','Ivy','Moe','Bea','Hal','Dot'];
@@ -1520,13 +1710,15 @@ const net={ready:false,off:false,db:null,ref:null,me:null,doc:null,rev:0,gid:nul
 function loadJSON(k){try{const s=localStorage.getItem(k);return s?JSON.parse(s):null}catch(e){return null}}
 function saveJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 function delJSON(k){try{localStorage.removeItem(k)}catch(e){}}
-const prefs=Object.assign({sound:false,haptics:true,theme:'auto',twoTap:true,hint:false,name:'',speed:'normal',autoplay:true,dummyView:true},loadJSON(PREFKEY)||{});
+const prefs=Object.assign({sound:false,haptics:true,theme:'auto',twoTap:true,hint:false,name:'',speed:'normal',autoplay:true,dummyView:true,big:false,reactions:true},loadJSON(PREFKEY)||{});
 const SPEED={relaxed:1.35,normal:0.8,fast:0.45};
-const spd=()=>SPEED[prefs.speed]||0.8;
+// Online, the computers' pace is shared by the table; offline it is this phone's own setting.
+const tableSpeed=()=>G&&G.opts.speed?G.opts.speed:prefs.speed;
+const spd=()=>SPEED[tableSpeed()]||0.8;
 const trickKey=lt=>lt?lt.hn+':'+lt.n+':'+(lt.u||0):null;
 prefs.rules=Object.assign({},DEFAULT_OPTS,prefs.rules||{});
 const savePrefs=()=>saveJSON(PREFKEY,prefs);
-const ui={screen:'home',sheet:null,sheetArg:null,sel:null,lvl:null,call:null,hold:null,lastTrickKey:null,seenHand:null,summaryFor:null,
+const ui={review:{},rx:{},stash:null,lastMoveAt:0,rxAt:0,screen:'home',sheet:null,sheetArg:null,sel:null,lvl:null,call:null,hold:null,lastTrickKey:null,seenHand:null,summaryFor:null,
   busy:false,toast:null,toastT:0,seenSeq:0,hint:null,explain:null,setup:{rules:Object.assign({},prefs.rules),op:4,teams:'order'}};
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const clone=o=>JSON.parse(JSON.stringify(o));
@@ -1541,7 +1733,7 @@ const myTeam=()=>viewSeat()&1;
 function live(){return G&&(G.phase==='auction'||G.phase==='play')}
 function mine(){const s=seat();return !!(live()&&s>=0&&actorOf(G)===s&&!G.players[s].bot)}
 function actorBot(){return !!(live()&&G.players[actorOf(G)].bot)}
-function save(){if(mode==='local'&&G)saveJSON(SAVEKEY,G)}
+function save(){if(mode==='local'&&G&&!G.opts.practice)saveJSON(SAVEKEY,G)}
 const nameOf=p=>p===seat()?'You':G.players[p].name;
 
 /* ---------- local game ---------- */
@@ -1608,6 +1800,7 @@ function maybeAutoplay(){
   setTimeout(()=>{if(!G||!mine()||G.phase!=='play'||G.hn+':'+G.trickNo+':'+G.trick.length+':'+(G.undos||0)!==key)return;
     const l2=legalCards(G,G.turn);if(l2.length===1){ui.sel=null;humanPlay(l2[0],true)}},(HEADLESS?0:650*spd()+(ui.hold?700:0)));
 }
+function humanConcede(){if(!mine())return;concedeRest(G,seat());sfx('bad');afterHuman()}
 function humanClaim(){if(!mine()||!canClaim(G))return;claimRest(G,G.contract.decl);sfx('good');afterHuman()}
 function afterHuman(){net.driver=true;commit();render();kick()}
 
@@ -1670,6 +1863,8 @@ async function initNet(){
     if(!db||!id){net.off=true;net.ready=true;render();return}
     try{net.canWrite=user&&user.can?await user.can('data.write'):null}catch(e){net.canWrite=null}
     net.db=db;net.me=id;net.ref=db.doc('games/current');
+    // Reactions live in their own record so they can never collide with a move.
+    try{net.rx=db.doc('games/react');net.rx.onSnapshot(s=>{const d=s.exists?s.data():null;if(d)onReaction(d)},()=>{})}catch(e){net.rx=null}
     net.ref.onSnapshot(snap=>{net.ready=true;net.doc=snap.exists?clone(snap.data()):null;applyDoc(net.doc);render()},
       ()=>{net.off=true;net.ready=true;if(mode==='online')flash('Lost the connection to the online game. Reload the page to reconnect.');render()});
   }catch(e){net.off=true;net.ready=true;render()}
@@ -1757,6 +1952,35 @@ function takeSeatBack(){
   const s=seat();if(mode!=='online'||s<0||!G.players[s].away)return;
   G.players[s].bot=false;G.players[s].away=false;addLog(G,`${G.players[s].name} is back.`,'seat');
   net.driver=true;commit();render();kick();
+}
+const REACTS=['👏','😮','😬','😂','🙏','🔥','🤔','👍'];
+function sendReaction(e,to){
+  if(!net.rx||mode!=='online'||!G||seat()<0)return;
+  if(now()-ui.rxAt<1200)return;ui.rxAt=now();
+  const msg={id:Math.random().toString(36).slice(2,10),gid:net.gid,seat:seat(),e,to:to==null?-1:to,at:now()};
+  onReaction(msg,true);
+  net.rx.set(msg).catch(()=>{});
+}
+function onReaction(d,local){
+  if(!d||!d.id||d.id===ui.rxLast)return;ui.rxLast=d.id;
+  if(mode!=='online'||!G||d.gid!==net.gid)return;
+  if(!local&&Math.abs(now()-(d.at||0))>20000)return;
+  if(!prefs.reactions&&d.seat!==seat())return;
+  ui.rx[d.seat]={e:d.e,at:now()};
+  if(d.e==='nudge'&&d.to===seat()&&!local){buzz(300);sfx('turn');flash(`${G.players[d.seat].name} nudges you: it's your turn.`)}
+  setTimeout(()=>{const r=ui.rx[d.seat];if(r&&now()-r.at>=3400){delete ui.rx[d.seat];render()}},3500);
+  render();
+}
+function rxBubble(p){const r=ui.rx[p];if(!r||now()-r.at>3500)return '';return `<div class="rxb" aria-live="polite">${r.e==='nudge'?'⏰':esc(r.e)}</div>`}
+function waitingOn(){ // a person (not me) who has had the turn for a while
+  if(!live()||mode!=='online')return -1;const a=actorOf(G);
+  if(a===seat()||G.players[a].bot)return -1;
+  return now()-ui.lastMoveAt>8000?a:-1;
+}
+function reactHTML(){
+  const w=waitingOn();
+  return shead('React')+`<div class="rxgrid">${REACTS.map(e=>`<button class="rxbtn" data-do="react" data-e="${e}">${e}</button>`).join('')}</div>
+   ${w>=0?`<button class="btn wide" data-do="nudge" data-p="${w}">⏰ Nudge ${esc(G.players[w].name)}</button>`:'<p class="sub center">You can nudge someone who has been thinking for a while.</p>'}`;
 }
 function notifyTurn(){
   const m=!!G&&mine();
@@ -1859,6 +2083,7 @@ const ICO={
 function applyTheme(){
   const r=document.documentElement;
   if(prefs.theme==='light'||prefs.theme==='dark')r.setAttribute('data-theme',prefs.theme);else r.removeAttribute('data-theme');
+  r.classList.toggle('big',!!prefs.big);
   const dark=prefs.theme==='dark'||(prefs.theme!=='light'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
   const m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',dark?'#0b1a14':'#dfe6d8');
 }
@@ -1880,14 +2105,53 @@ function syncHold(){
   if(!ui.hold)holdEnded();
 }
 function flashSoon(m){setTimeout(()=>flash(m),0)}
+/* ---------- hand review (exact search in a background worker) ---------- */
+let ddWorker=null;
+const revKey=h=>(G&&G.opts.practice?'p'+G.opts.practice.n+':':'')+h.hn;
+function reviewDeal(h){
+  if(!h||h.passed||!h.played||!h.played.length)return;
+  const key=revKey(h);if(ui.review[key])return;
+  ui.review[key]={status:'run'};
+  try{
+    if(typeof Worker==='undefined'||typeof Blob==='undefined')throw new Error('no worker');
+    if(!ddWorker){
+      const src=ddFactory.toString()+'\nconst DD=ddFactory();\nonmessage=e=>{const m=e.data;let r=null;try{r=DD.review(m.orig,m.strain,m.decl,m.played,m.budget)}catch(err){r=null}postMessage({hn:m.hn,r})};';
+      ddWorker=new Worker(URL.createObjectURL(new Blob([src],{type:'text/javascript'})));
+      ddWorker.onmessage=e=>{const {hn,r}=e.data;ui.review[hn]=r?Object.assign({status:'done'},r):{status:'fail'};render()};
+      ddWorker.onerror=()=>{for(const k in ui.review)if(ui.review[k].status==='run')ui.review[k]={status:'fail'};ddWorker=null;render()};
+    }
+    ddWorker.postMessage({hn:key,orig:h.orig,strain:h.contract.strain,decl:h.contract.decl,played:h.played,budget:6e6});
+  }catch(e){ui.review[key]={status:'fail'}}
+}
+function cardTxt(c){const s=sOf(c);return `<span class="cdt${s===1||s===2?' red':''}">${RANKNAME[rOf(c)]}${SUITSYM[s]}</span>`}
+function reviewHTML(h){
+  const R=ui.review[revKey(h)];
+  const head='<h3 class="rvh">Hand review</h3>';
+  if(!h.played||!h.played.length)return '';
+  if(!R)return head+'<p class="sub">Not checked.</p>';
+  if(R.status==='run')return head+'<p class="sub"><span class="spin"></span>Checking every card with perfect play… This runs in the background.</p>';
+  if(R.status==='fail')return head+'<p class="sub">The check didn\'t finish on this device.</p>';
+  const c=h.contract,need=c.level+6,dn=nameOf(c.decl),ds=teamOf(c.decl);
+  let t0=R.vals.findIndex(v=>v!=null);
+  if(t0<0)return head+'<p class="sub">This deal was too long to check here.</p>';
+  const best=R.vals[t0],res=best>=need?`${bidText(c.bid)} makes${best>need?' with '+(best-need)+' over':''}`:`${bidText(c.bid)} goes down ${need-best}`;
+  const from=t0===0?'from the start':`from the start of trick ${t0+1}`;
+  const side=dn==='You'?'your side':esc(dn)+"'s side";
+  const stop=h.played.length<13?` The rest was claimed or given up, so the check stops at trick ${h.played.length}.`:'';
+  const errs=R.errs.map(e=>{const own=teamOf(e.p)===ds,n=Math.abs(e.d),tr=n>1?n+' tricks':'a trick';
+    return `<li><b>Trick ${e.t+1}</b> ${esc(nameOf(e.p))} played ${cardTxt(e.c)}: ${own?'cost declarer '+tr:'gave declarer '+tr}.</li>`}).join('');
+  return head+`<p class="rvs">With perfect play ${from}, ${side} takes <b>${best}</b> tricks: ${res}. They took ${h.took}.${stop}</p>`+
+    (errs?`<ul class="rvl">${errs}</ul>`:`<p class="sub">Nobody lost a trick ${from}.</p>`)+
+    `<p class="sub">"Perfect play" means as if every player could see all four hands.${t0>=1?' The opening lead is too deep to check on a phone.':''}</p>`;
+}
 function holdEnded(){
   const h=G.lastHand;
   if(h&&h.hn!==ui.seenHand){ui.seenHand=h.hn;
     if(h.passed){flashSoon('All four passed. New cards.');return}
-    ui.summaryFor=h.hn;ui.sheet='hand';
+    ui.summaryFor=h.hn;ui.sheet='hand';reviewDeal(h);
     const dt=teamOf(h.contract.decl);sfx((h.r.made)===(dt===myTeam())?'good':'bad')}
 }
-function dummyShown(disp){return !disp.old&&G.phase==='play'&&G.dummyUp&&G.contract}
+function dummyShown(disp){return !disp.old&&G.phase==='play'&&(G.dummyUp||G.opts.open)&&G.contract}
 function seatHTML(p,disp){
   const r=rel(p),pl=G.players[p],act=live()?actorOf(G):-1;
   const turn=live()&&G.turn===p&&!disp.old&&!(ui.hold&&!G.trick.length);
@@ -1905,7 +2169,7 @@ function seatHTML(p,disp){
     <div class="av"><span>${esc((pl.name||'?').slice(0,1).toUpperCase())}</span>${pl.bot?'<em class="cpu" title="Computer">cpu</em>':''}${dl}</div>
     <div class="nm">${esc(pl.name)}</div>
     ${chip?`<div class="chip">${chip}</div>`:''}
-    ${think?'<div class="dots" aria-label="thinking"><i></i><i></i><i></i></div>':''}
+    ${think?'<div class="dots" aria-label="thinking"><i></i><i></i><i></i></div>':''}${rxBubble(p)}
     <div class="backs">${backs}</div></div>`;
 }
 function vulTag(t){return isVul(G,t)?'<span class="vul" title="Vulnerable">Vul</span>':''}
@@ -1913,7 +2177,7 @@ function topHTML(disp){
   const us=myTeam(),th=1-us,c=disp.old?disp.rec.contract:G.contract;
   const sub=t=>G.opts.scoring==='rubber'?`<small class="gm">${'●'.repeat(G.games[t])}${'○'.repeat(2-G.games[t])}${G.below[t]?' '+G.below[t]:''}</small>`:'';
   const mid=(G.phase==='play'||disp.old)&&c?`<span class="mid"><small>${disp.old?'Played':'Contract'}</small><b class="ct">${contractHTML(c)}</b><small>by ${esc(nameOf(c.decl))}</small></span>`
-    :`<span class="mid"><small>Deal</small><b>${G.opts.scoring==='chicago'?G.cdeal+'<i>/4</i>':G.hn}</b><small>${G.phase==='end'?'Done':G.opts.scoring==='chicago'?'Chicago':'Rubber'}</small></span>`;
+    :G.opts.practice?`<span class="mid"><small>Practice</small><b>${G.opts.practice.hn}</b><small>replay</small></span>`:`<span class="mid"><small>Deal</small><b>${G.opts.scoring==='chicago'?G.cdeal+'<i>/4</i>':G.hn}</b><small>${G.phase==='end'?'Done':G.opts.scoring==='chicago'?'Chicago':'Rubber'}</small></span>`;
   return `<button class="ib" data-do="menu" aria-label="Menu">${ICO.menu}</button>
   <button class="scorebar" data-do="scores" aria-label="Scoreboard">
     <span class="sc us"><small>Us ${vulTag(us)}</small><b>${G.total[us]}</b>${sub(us)}</span>${mid}
@@ -1998,6 +2262,7 @@ function mebarHTML(disp){
   if(away)btns.push('<button class="pill strong" data-do="back">Take my seat back</button>');
   else{
     if(canUndo()&&!disp.old)btns.push('<button class="pill undo" data-do="undo" aria-label="Undo">↶ Undo</button>');
+    if(G.opts.open&&G.phase==='auction'&&!disp.old)btns.push('<button class="pill" data-do="hands">All hands</button>');
     const claim=inPlay&&mine()&&canClaim(G);
     if(claim)btns.push('<button class="pill strong" data-do="ask-claim">Claim</button>');
     if(inPlay&&!(claim&&canUndo()))btns.push('<button class="pill" data-do="auction">Bids</button>');
@@ -2005,11 +2270,13 @@ function mebarHTML(disp){
   }
   const who=inPlay&&c?(s===c.decl?'Declarer':s===c.dummy?'Dummy':'Defending'):'';
   const mid=inPlay?`<div class="chip big"><small class="who">${who}</small>${trickCount()}</div>`:`<div class="nm"><b>${esc(mode==='online'?pl.name:'You')}</b><small>${role}</small></div>`;
-  return `<div class="mebar us${mine()?' turn':''}"><div class="av"><span>${esc((pl.name||'Y').slice(0,1).toUpperCase())}</span></div>
-   ${mid}<span class="grow"></span>${btns.join('')}</div>`;
+  const shown=btns.slice(0,3);
+  if(mode==='online'&&!away)shown.push('<button class="ib rx" data-do="react" aria-label="React">☺</button>');
+  return `<div class="mebar us${mine()?' turn':''}"><div class="av"><span>${esc((pl.name||'Y').slice(0,1).toUpperCase())}</span>${rxBubble(s)}</div>
+   ${mid}<span class="grow"></span>${shown.join('')}</div>`;
 }
 function handGeom(n,W){
-  const cw=W>=520?76:W>=420?70:64,ch=Math.round(cw*1.42);
+  const cw=Math.round((W>=520?76:W>=420?70:64)*(prefs.big?1.16:1)),ch=Math.round(cw*1.42);
   const rot=n>1?Math.min(1.6,13/n):0,spill=Math.sin(rot*(n-1)/2*Math.PI/180)*ch+4;
   const step=n>1?Math.min(cw*0.62,(W-2*spill-cw)/(n-1)):0,tot=cw+step*(n-1),x0=(W-tot)/2,mid=(n-1)/2;
   return {cw,ch,step,x0,mid,rot};
@@ -2036,6 +2303,7 @@ function openSeats(disp){
   const c=G.contract,me=seat(),out=[];
   if(rel(c.dummy)!==0)out.push(c.dummy);
   if(me>=0&&me===c.dummy&&prefs.dummyView&&!G.players[me].away)for(let p=0;p<4;p++)if(p!==me&&!out.includes(p))out.push(p);
+  if(G.opts.open&&me>=0)for(let p=0;p<4;p++)if(p!==me&&!out.includes(p))out.push(p);
   return out;
 }
 function rowsHTML(h,order){
@@ -2067,7 +2335,36 @@ function trickItems(){
   return cards.map((x,i)=>({k:'t'+hn+'-'+x.c,cls:`card tc r${rel(x.p)}${isRed(x.c)?' red':''}${hold&&x.p===hold.w?' win':''}${x.p===lead?' lead':''}${hold&&hold.stage==='out'?' out w'+rel(hold.w):''}`,
     style:`z-index:${i+1}`,html:faceHTML(x.c),attrs:{'aria-label':cardAria(x.c)},enter:'in',enterMs:400}));
 }
+// Play a finished deal again from any seat, as a one-deal practice game. The real game waits.
+function replayHTML(){
+  const h=(ui.stash||G).history.find(x=>x.hn===ui.sheetArg);if(!h)return '';
+  const src=ui.stash||G,c=h.contract;
+  const opt=p=>{const role=p===c.decl?'declarer':p===c.dummy?'dummy':'defender';
+    return `<button class="btn wide" data-do="replay-go" data-p="${p}"><span>${p===0?'Your own cards':esc(src.players[p].name)+'\'s cards'}</span><small>${COMPASS[p]} · ${role} in ${bidText(c.bid)}</small></button>`};
+  return shead('Replay deal '+h.hn)+`<p class="sub">Same cards, same dealer. Pick whose hand you hold. The other three seats are computers. Nothing counts toward your score.</p><div class="mlist">${[c.decl,c.dummy,(c.decl+1)%4,(c.decl+3)%4].map(opt).join('')}</div>`;
+}
+function startReplay(hn,p){
+  const src=ui.stash||G,h=src.history.find(x=>x.hn===hn);if(!h)return;
+  if(!ui.stash){ui.stash=G;saveJSON(SAVEKEY,G)}
+  const names=shuffle(BOTNAMES.slice());
+  const rot=q=>(q-p+4)%4; // original seat q -> new seat
+  const used=new Set(src.players.map(x=>x.name)),spare=names.find(n=>!used.has(n))||'Kit';
+  const players=[0,1,2,3].map(i=>{const q=(i+p)%4;return i===0?{name:src.players[0].name}:{name:q===0?spare:src.players[q].name,bot:true}});
+  const deck=[];for(let i=0;i<4;i++)deck.push(...h.orig[(i+p)%4]);
+  const vul=[0,1].map(t=>!!h.vul[(t+p)&1]);
+  const was=`${src.players[h.contract.decl].name} played ${bidText(h.contract.bid)}${h.contract.dbl?' doubled':''} and took ${h.took}`;
+  G=newGame(players,Object.assign({},src.opts,{practice:{hn,seat:p,vul,was,n:now()}}),rot(h.dealer));
+  G.hn=0;G.cdeal=0;G.log=[];G.seq=0;startDeal(G,deck,true);G.dealer=rot(h.dealer);G.turn=G.dealer;
+  mode='local';adoptFresh();ui.screen='game';ui.sheet=null;render();kick();
+}
+function endReplay(){
+  if(!ui.stash)return;
+  G=ui.stash;ui.stash=null;mode='local';adoptFresh();ui.screen='game';ui.sheet=null;render();kick();
+}
 function endHTML(){
+  if(G.opts.practice){const h=G.lastHand;
+    return `<div class="endp">${emblem(80)}<h2>Practice done</h2><p class="sub">${h&&!h.passed?`You played it as ${esc(COMPASS[G.opts.practice.seat])}: ${esc(G.players[h.contract.decl].name)} took ${h.took} in ${bidText(h.contract.bid)}.`:'All four passed.'}<br>For real: ${esc(G.opts.practice.was)}.</p>
+     <div class="row2"><button class="btn" data-do="replay" data-h="${G.opts.practice.hn}">Again</button><button class="btn primary" data-do="endreplay">Back to the game</button></div></div>`}
   const w=G.winner,us=myTeam(),won=w===us,s=seat();
   const title=w<0?'A tie':s<0?esc(teamName(G,w))+' win':won?'You win!':'They win';
   return `<div class="endp ${won?'won':'lost'}">${emblem(96)}<h2>${title}</h2>
@@ -2085,6 +2382,7 @@ function renderGame(app){
   }
   syncHold();
   const disp=dispState();
+  if(G.seq!==ui.lastSeqSeen){ui.lastSeqSeen=G.seq;ui.lastMoveAt=now()}
   if(G.seq!==ui.seenSeq){
     for(const l of G.log)if(l.s>ui.seenSeq&&l.h===G.hn){
       if(l.k==='contract'&&G.phase==='play'&&G.contract){const c=G.contract;flashSoon(`${c.decl===seat()?'You play':G.players[c.decl].name+' plays'} ${contractText(c)}.`)}
@@ -2123,7 +2421,7 @@ function layoutTable(t,disp){
   const botB=H-46,avail=Math.max(120,botB-topB-6);
   const panels=sides.some(el=>el.classList.contains('dummy'));
   const need=panels?Math.min(128,W*0.33):78;
-  let tch=Math.max(58,Math.min(92,avail/2.2)),tcw=tch/1.42;
+  let tch=Math.max(58,Math.min(prefs.big?104:92,avail/2.2)),tcw=tch/1.42;
   const maxW=(W/2-need-4)/1.08;if(tcw>maxW){tcw=Math.max(40,maxW);tch=tcw*1.42}
   const tdx=Math.max(tcw*0.55,Math.min(tcw*0.98,W/2-tcw/2-need)),tdy=Math.min(tch*0.56,(avail-tch)/2);
   const cy=topB+3+avail/2;
@@ -2171,7 +2469,9 @@ function rulesForm(){
   return `<div class="opts">
   <div class="opt"><span>Scoring <small>${R.scoring==='rubber'?'First side to two games':'Four deals, set vulnerability'}</small></span>${seg('scoring',['rubber','chicago'],['Rubber','Chicago'],R.scoring)}</div>
   <div class="opt"><span>Count honors <small>100 or 150 for top trumps or four aces</small></span>${seg('honors',[true,false],['On','Off'],R.honors)}</div>
-  <div class="opt"><span>Peek at last trick</span>${seg('lastTrick',[true,false],['On','Off'],R.lastTrick)}</div></div>`;
+  <div class="opt"><span>Peek at past tricks</span>${seg('lastTrick',[true,false],['On','Off'],R.lastTrick)}</div>
+  <div class="opt"><span>All hands face up <small>Practice: everyone sees every hand</small></span>${seg('open',[false,true],['Off','On'],!!R.open)}</div>
+  <div class="opt"><span>Computer speed <small>${'For the whole table'}</small></span>${seg('speed',['relaxed','normal','fast'],['Relaxed','Normal','Fast'],R.speed||'normal')}</div></div>`;
 }
 function shead(t){return `<div class="shead"><h2>${t}</h2><button class="ib" data-do="close" aria-label="Close">${ICO.close}</button></div>`}
 function onlineHTML(){
@@ -2227,15 +2527,18 @@ function summaryHTML(){
   const h=G.history.find(x=>x.hn===ui.summaryFor)||G.lastHand;if(!h||h.passed)return '';
   const us=myTeam(),dt=teamOf(h.contract.decl);
   const team=t=>{const ls=dealPoints(h.hn,t),tot=ls.reduce((a,l)=>a+l.pts,0);
-    return `<div class="tm ${t===us?'us':'them'}"><div class="tmh"><b>${t===us?'Us':'Them'}</b><span>${t===dt?`Took ${h.took} of ${h.contract.level+6}`:`Took ${13-h.took}`}</span></div>
+    return `<div class="tm ${t===us?'us':'them'}"><div class="tmh"><b>${t===us?'Us':'Them'}</b><span>${t===dt?`Took ${h.took}, needed ${h.contract.level+6}`:`Took ${13-h.took}`}</span></div>
      ${ls.length?ls.map(l=>`<div class="ln"><span>${l.below?'Contract (below the line)':esc(l.what[0].toUpperCase()+l.what.slice(1))}</span><b>+${l.pts}</b></div>`).join(''):'<div class="ln"><span>No points this deal</span><b>0</b></div>'}
      <div class="ln tot"><span>${G.opts.scoring==='rubber'?'Games '+h.games[t]:''}</span><b>${tot?'+'+tot+' → ':''}${h.after[t]}</b></div></div>`};
   const over=G.phase==='end'&&h.hn===G.history[G.history.length-1].hn;
   const head=`${esc(nameOf(h.contract.decl))} played ${contractHTML(h.contract)}: <b class="${h.r.made?'rok':'rbad'}">${resultText(h)}</b>`;
   return `<div class="shead"><h2>Deal ${h.hn}</h2></div><p class="res">${head}${h.rubber?' · <b>rubber</b>':h.game?' · <b>game</b>':''}</p>
    ${team(dt)}${team(1-dt)}
+   ${G.opts.practice?`<p class="sub">When it was played for real: ${esc(G.opts.practice.was)}.</p>`:''}
+   <div class="rv">${reviewHTML(h)}</div>
    <details class="rd"><summary>All four hands and the bidding</summary>${dealDiagram(h)}${auctionGrid(h.auction,h.dealer,{vul:h.vul})}</details>
-   <button class="btn primary wide" data-do="nexthand">${over?'See the result':mode==='online'?'Back to the table':'Next deal'}</button>`;
+   ${mode==='local'?`<button class="btn wide" data-do="replay" data-h="${h.hn}">Replay this deal</button>`:''}
+   <button class="btn primary wide" data-do="nexthand">${G.opts.practice?'Done':over?'See the result':mode==='online'?'Back to the table':'Next deal'}</button>`;
 }
 function logHTML(){
   const items=G.log.slice().reverse().slice(0,200).map(l=>`<li class="${l.k}"><i>D${l.h}</i>${esc(l.m)}</li>`).join('');
@@ -2267,14 +2570,19 @@ function rulesHTML(){
   <h3>How the computers bid</h3>
   <p>Opening 1♥ or 1♠ shows 5+ cards and 12–21 points (ace 4, king 3, queen 2, jack 1). 1♣ or 1♦ shows 3+. 1NT is 15–17 and balanced, 2NT 20–21, 2♣ 22+. 2♦, 2♥, 2♠ are weak: six cards and 5–10 points.</p>
   <p>Over 1NT: 2♣ asks for a 4-card major (Stayman); 2♦ and 2♥ are transfers to the next suit. Raising partner's major to 2 shows 6–10, to 3 shows 10–12, 2NT is a game raise. 4NT asks for aces (Blackwood).</p>
-  <p>Tap any call in the bidding to see what it shows. Turn on <b>Bid hint</b> in Settings to see what the computer would bid with your cards.</p></div>`;
+  <p>Tap any call in the bidding to see what it shows. Turn on <b>Bid hint</b> in Settings to see what the computer would bid with your cards.</p>
+  <h3>Extras</h3>
+  <p><b>Hand review:</b> after each deal the summary checks every card against perfect play and lists any card that cost or gave away a trick. <b>Replay this deal</b> lets you play the same cards again from any seat; it doesn't count. <b>All hands face up</b> (a table rule) is for teaching.</p>
+  <p>Online, tap ☺ to send a reaction, or nudge someone who has been thinking a while. Your Settings (large cards, tap twice, forced cards, hints, dummy view, sound) are for your phone only.</p></div>`;
 }
 function settingsHTML(){
   const tg=(k,label,sub)=>`<div class="setting"><div><b>${label}</b>${sub?`<p class="sub">${sub}</p>`:''}</div><button class="tog${prefs[k]?' on':''}" data-do="pref" data-k="${k}" aria-pressed="${!!prefs[k]}"><i></i></button></div>`;
   return shead('Settings')+tg('sound','Sound','Soft tones for cards, tricks and your turn.')+tg('haptics','Vibration','A buzz when it\'s your turn.')+
    tg('twoTap','Tap twice to play','First tap raises a card, second tap plays it.')+tg('autoplay','Play forced cards','When only one card can be played, play it for me.')+
    tg('dummyView','See all hands as dummy','While your partner plays the hand, show everyone\'s cards.')+tg('hint','Bid hint','Show what the computer would bid with your cards.')+
-   `<div class="setting"><div><b>Speed</b><p class="sub">How fast the computers play.</p></div><div class="seg">${['relaxed','normal','fast'].map(t=>`<button class="${prefs.speed===t?'on':''}" data-do="speed" data-v="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div></div>`+
+   tg('big','Large cards','Bigger cards and text on this phone.')+(mode==='online'?tg('reactions','Reactions','Show reactions and nudges from the table.'):'')+
+   `<div class="setting"><div><b>Computer speed</b><p class="sub">${mode==='online'&&G?'Changes it for everyone at this table.':'How fast the computers play.'}</p></div><div class="seg">${['relaxed','normal','fast'].map(t=>`<button class="${tableSpeed()===t?'on':''}" data-do="speed" data-v="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div></div>`+
+   `<p class="sub center">These settings are for this phone only${mode==='online'&&G?', except computer speed':''}.</p>`+
    `<div class="setting"><div><b>Theme</b></div><div class="seg">${['auto','light','dark'].map(t=>`<button class="${prefs.theme===t?'on':''}" data-do="theme" data-v="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div></div>`;
 }
 function menuHTML(){
@@ -2284,8 +2592,11 @@ function menuHTML(){
   return shead('Menu')+`<div class="mlist"><button class="btn wide" data-do="scores">Scoreboard</button><button class="btn wide" data-do="log">Game log</button>
    ${G.phase==='play'?'<button class="btn wide" data-do="auction">The bidding</button>':''}
    ${G.opts.lastTrick&&G.phase==='play'?'<button class="btn wide" data-do="tricks">Tricks this deal</button>':''}
+   ${G.phase==='play'&&mine()?'<button class="btn wide" data-do="ask-concede">Give up the rest</button>':''}
+   ${G.opts.open||mode==='local'?'':''}
    <button class="btn wide" data-do="rules">How to play</button><button class="btn wide" data-do="settings">Settings</button>
-   ${mode==='local'?'<button class="btn wide" data-do="home">Home (game is saved)</button><button class="btn wide ghost" data-do="ask-new">Quit this game</button>':''}
+   ${mode==='local'&&G.opts.practice?'<button class="btn wide" data-do="endreplay">Back to the real game</button>':''}
+   ${mode==='local'&&!G.opts.practice?'<button class="btn wide" data-do="home">Home (game is saved)</button><button class="btn wide ghost" data-do="ask-new">Quit this game</button>':''}
    ${mode==='online'&&s<0?'<button class="btn wide" data-do="leave">Stop watching</button>':''}
    ${mode==='online'&&s>=0?'<button class="btn wide ghost" data-do="ask-endOnline">End the online game</button>':''}</div>${seats}
    <p class="sub center">${G.opts.scoring==='chicago'?'Chicago, four deals':'Rubber bridge'}${G.opts.honors?', honors count':''}.</p>`;
@@ -2306,6 +2617,9 @@ function sheetHTML(){
   else if(s==='scores')inner=scoresHTML();
   else if(s==='log')inner=logHTML();
   else if(s==='last'||s==='tricks')inner=tricksHTML();
+  else if(s==='react')inner=reactHTML();
+  else if(s==='replay')inner=replayHTML();
+  else if(s==='hands')inner=shead('All hands')+dealDiagram({orig:G.hands,contract:{decl:-1,strain:4}});
   else if(s==='auction'){if(!G.contract)return '';inner=auctionSheet()}
   else if(s==='hand'){inner=summaryHTML();cls=' sum'}
   else if(s==='confirm'){inner=confirmHTML();cls=' small'}
@@ -2332,15 +2646,26 @@ document.addEventListener('click',e=>{
     case 'explain':ui.explain=ui.explain===+d.k?null:+d.k;render();break;
     case 'hint':prefs.hint=!prefs.hint;savePrefs();ui.hint=null;render();break;
     case 'undo':doUndo();break;
-    case 'speed':prefs.speed=d.v;savePrefs();render();break;
+    case 'react':if(d.e){sendReaction(d.e);ui.sheet=null;render()}else{ui.sheet='react';render()}break;
+    case 'nudge':sendReaction('nudge',+d.p);ui.sheet=null;render();break;
+    case 'hands':ui.sheet='hands';render();break;
+    case 'replay':ui.summaryFor=null;ui.sheet='replay';ui.sheetArg=+d.h;render();break;
+    case 'replay-go':{const hn=ui.sheetArg;startReplay(hn,+d.p);break}
+    case 'endreplay':endReplay();break;
+    case 'ask-concede':ask('Give up the rest?',`The other side takes the last ${13-G.trickNo} trick${13-G.trickNo>1?'s':''}.`,'Give them up','concede');break;
+    case 'concede':ui.sheet=null;humanConcede();break;
+    case 'speed':
+      if(mode==='online'&&G&&seat()>=0){G.opts.speed=d.v;addLog(G,`${G.players[seat()].name} set the computers to ${d.v}.`,'seat');net.driver=true;commit()}
+      else{prefs.speed=d.v;prefs.rules.speed=d.v;savePrefs();if(G&&mode==='local'){G.opts.speed=d.v;save()}}
+      render();break;
     case 'menu':case 'scores':case 'log':case 'rules':case 'settings':case 'last':case 'tricks':case 'online':case 'auction':ui.explain=null;ui.sheet=d.do;render();break;
     case 'solo':ui.setup.rules=Object.assign({},prefs.rules);ui.sheet='solo';render();break;
     case 'deal':startSolo();break;
-    case 'again':{const names=G.players.map(p=>({name:p.name,bot:p.bot}));const opts=G.opts;G=newGame(names,opts);mode='local';adoptFresh();save();render();kick();break}
+    case 'again':{const names=G.players.map(p=>({name:p.name,bot:p.bot}));const opts=Object.assign({},G.opts);delete opts.practice;G=newGame(names,opts);mode='local';ui.stash=null;adoptFresh();save();render();kick();break}
     case 'continue':{const s=savedGame();if(s){G=s;mode='local';adoptFresh();ui.screen='game';ui.sheet=null;render();kick()}break}
     case 'rejoin':if(G&&mode==='online'){ui.screen='game';render()}break;
-    case 'home':if(mode==='local'){save();G=null;ui.screen='home';ui.sheet=null;if(botTimer){clearTimeout(botTimer);botTimer=0;ui.busy=false}render()}break;
-    case 'nexthand':closeSheet();break;
+    case 'home':if(mode==='local'){if(ui.stash){G=ui.stash;ui.stash=null}save();G=null;ui.screen='home';ui.sheet=null;if(botTimer){clearTimeout(botTimer);botTimer=0;ui.busy=false}render()}break;
+    case 'nexthand':closeSheet();if(G&&G.opts.practice&&G.phase==='end'){/* end panel offers the way back */}break;
     case 'close':closeSheet();break;
     case 'scrim':if(ui.sheet!=='hand')closeSheet();break;
     case 'rule':{let v=d.v;v=v==='true'?true:v==='false'?false:v;ui.setup.rules[d.k]=v;render();break}
