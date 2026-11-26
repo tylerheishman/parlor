@@ -305,19 +305,35 @@ button.ac:active{background:var(--panel-2)}.ac.on{background:var(--panel-2);box-
 .dc.dim{filter:brightness(.62) saturate(.4)}
 .dc.up{transform:translateY(8px);box-shadow:0 0 0 2px var(--brass-2),0 10px 18px -8px var(--shadow);z-index:40!important}
 .dcol .void{display:block;text-align:center;color:var(--ink-2);font-weight:700}
-.dummy.side{position:absolute;top:2px;width:124px;background:color-mix(in srgb,var(--panel) 82%,transparent);border:1px solid var(--line);border-radius:12px;padding:5px 6px 4px}
+.dummy.opn{background:color-mix(in srgb,var(--panel) 86%,transparent);border:1px solid var(--line);border-radius:12px;padding:5px 7px 4px;display:block}
+.dummy.opn.peek{border-style:dashed}
+.dummy.side{position:absolute;top:2px;width:var(--sidew,124px)}
+.dummy.opn.top{min-width:150px;max-width:210px}
 .dummy.side.left{left:4px}.dummy.side.right{right:4px}
-.dummy.side .dlabel{border:0;background:transparent;padding:0 0 3px;margin:0;text-align:left}
-.dummy.side .dlabel.turn{background:transparent;color:var(--brass)}
-.drow{display:flex;align-items:center;flex-wrap:wrap;min-height:21px;font:400 15px/1.15 var(--rank);color:var(--blk);gap:0 3px}
+.dummy.opn .dlabel{border:0;background:transparent;padding:0 0 3px;margin:0;text-align:left;overflow:hidden;text-overflow:ellipsis}
+.dummy.opn .dlabel.turn{background:transparent;color:var(--brass)}
+.drow{display:flex;align-items:center;flex-wrap:wrap;min-height:21px;font:400 15px/1.15 var(--rank);color:var(--blk);gap:0 5px}
+.drow .ds{margin-right:1px}
 :root[data-theme="dark"] .drow{color:var(--ink)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .drow{color:var(--ink)}}
 .drow.red{color:var(--red)}
 .ds{width:12px;height:12px;fill:currentColor;flex:none;margin-right:2px}
-.table.dtop .trick{top:60%}
-.table.dtop .seat.r1,.table.dtop .seat.r3{top:34%}
+.trick{top:var(--tcy,47%)}
+.tc{--cw:var(--tcw,62px);--ch:var(--tch,88px)}
+.tc.r0{--ty:var(--tdy,54px)}.tc.r1{--tx:calc(-1 * var(--tdx,62px))}.tc.r2{--ty:calc(-1 * var(--tdy,52px))}.tc.r3{--tx:var(--tdx,62px)}
+.tc.lead{box-shadow:0 0 0 2px color-mix(in srgb,var(--us) 70%,transparent),0 8px 18px -8px var(--shadow)}
+.seat{transition:top .25s}
 /* my bar */
-.chip .tk{font:400 18px var(--rank)}.chip .tk i{font-style:normal;color:var(--ink-2);margin:0 2px}
+.chip .tk{font:400 18px var(--rank)}.chip small.who{display:block;font-size:10px;letter-spacing:1px;text-transform:uppercase;margin:0 0 1px}
+.pill.undo{background:var(--panel);border-color:var(--brass);color:var(--brass);font-weight:800}
+.mebar{gap:8px}.mebar .pill{padding:6px 11px;white-space:nowrap;flex:none}.mebar .chip.big{flex:none}
+@media (max-width:370px){.mebar{gap:6px;padding-left:8px;padding-right:8px}.mebar .pill{padding:6px 9px}}
+.tlist{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.trow{display:grid;grid-template-columns:22px repeat(4,minmax(0,1fr));gap:6px;align-items:start}
+.trow>b{font:400 17px var(--rank);padding-top:24px;text-align:center}.trow>b.us{color:var(--us)}.trow>b.them{color:var(--them)}
+.tcell{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;font-weight:600;color:var(--ink-2)}
+.tcell .card.mini{--cw:54px;--ch:76px}
+.tcell.win .card{box-shadow:0 0 0 2.5px var(--brass-2)}.tcell.win span{color:var(--ink)}.chip .tk i{font-style:normal;color:var(--ink-2);margin:0 2px}
 .chip small{display:block;font-size:10.5px;color:var(--ink-2);font-weight:600;margin-top:1px;white-space:nowrap}
 .mebar .pill{margin-left:2px}
 /* summary & scores */
@@ -466,7 +482,7 @@ function playCard(G,p,c){
   if(G.trick.length===4){
     const w=trickWinner(G.trick,G.contract.strain);G.tricks[teamOf(w)]++;
     G.played.push({l:G.trick[0].p,c:G.trick.map(x=>x.c),w});
-    G.lastTrick={n:G.trickNo,hn:G.hn,cards:G.trick.slice(),w};
+    G.lastTrick={n:G.trickNo,hn:G.hn,cards:G.trick.slice(),w,u:G.undos||0};
     G.trick=[];G.leader=w;G.turn=w;G.trickNo++;
     addLog(G,`${G.players[w].name} wins trick ${G.trickNo} (${G.lastTrick.cards.map(x=>cardName(x.c)).join(' ')}).`,'trick');
     if(G.trickNo===13)endDeal(G);
@@ -1504,7 +1520,10 @@ const net={ready:false,off:false,db:null,ref:null,me:null,doc:null,rev:0,gid:nul
 function loadJSON(k){try{const s=localStorage.getItem(k);return s?JSON.parse(s):null}catch(e){return null}}
 function saveJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 function delJSON(k){try{localStorage.removeItem(k)}catch(e){}}
-const prefs=Object.assign({sound:false,haptics:true,theme:'auto',twoTap:true,hint:false,name:''},loadJSON(PREFKEY)||{});
+const prefs=Object.assign({sound:false,haptics:true,theme:'auto',twoTap:true,hint:false,name:'',speed:'normal',autoplay:true,dummyView:true},loadJSON(PREFKEY)||{});
+const SPEED={relaxed:1.35,normal:0.8,fast:0.45};
+const spd=()=>SPEED[prefs.speed]||0.8;
+const trickKey=lt=>lt?lt.hn+':'+lt.n+':'+(lt.u||0):null;
 prefs.rules=Object.assign({},DEFAULT_OPTS,prefs.rules||{});
 const savePrefs=()=>saveJSON(PREFKEY,prefs);
 const ui={screen:'home',sheet:null,sheetArg:null,sel:null,lvl:null,call:null,hold:null,lastTrickKey:null,seenHand:null,summaryFor:null,
@@ -1533,7 +1552,7 @@ function startSolo(){
   mode='local';adoptFresh();save();ui.screen='game';ui.sheet=null;render();kick();
 }
 function adoptFresh(){
-  ui.lastTrickKey=G&&G.lastTrick?G.lastTrick.hn+':'+G.lastTrick.n:null;ui.hold=null;
+  ui.lastTrickKey=G?trickKey(G.lastTrick):null;ui.hold=null;ui.undo=null;ui.autoKey=null;
   ui.seenHand=G&&G.lastHand?G.lastHand.hn:null;ui.summaryFor=null;ui.sel=null;ui.lvl=null;ui.call=null;ui.seenSeq=G?G.seq:0;ui.hint=null;ui.explain=null;
 }
 function inputVal(id){try{const el=document.getElementById(id);return el?el.value:''}catch(e){return ''}}
@@ -1542,6 +1561,7 @@ function inputVal(id){try{const el=document.getElementById(id);return el?el.valu
 function humanCall(c){
   if(!mine()||G.phase!=='auction')return;
   const s=seat();if(!legalCalls(G,s).some(x=>x===c))return;
+  snapUndo(callText(c));
   applyCall(G,s,c);ui.lvl=null;ui.call=null;ui.explain=null;
   sfx('bid');afterHuman();
 }
@@ -1556,35 +1576,71 @@ function tapCard(c,from){
   ui.sel=null;humanPlay(c);
 }
 function followMsg(p){const l=sOf(G.trick[0].c);return p===seat()?`You must follow ${SUITNAME[l]}.`:`Dummy must follow ${SUITNAME[l]}.`}
-function humanPlay(c){
+function humanPlay(c,auto){
   if(!mine()||!legalCards(G,G.turn).includes(c))return;
+  if(!auto)snapUndo(cardName(c)+(G.turn===seat()?'':' from dummy'));
   playCard(G,G.turn,c);sfx('card');afterHuman();
+}
+/* ---------- undo: take back your last call or card ---------- */
+function snapUndo(label){ui.undo={g:clone(G),hn:G.hn,phase:G.phase,trickNo:G.trickNo,label}}
+function canUndo(){
+  const u=ui.undo,s=seat();
+  if(!u||!G||!live()||s<0||G.players[s].bot||u.hn!==G.hn)return false;
+  if(u.phase==='auction')return G.phase==='auction'||(mode==='local'&&G.trickNo===0&&!G.trick.length);
+  if(mode==='local')return true;
+  // online: until anyone plays to the next trick
+  return G.trickNo===u.trickNo||(G.trickNo===u.trickNo+1&&!G.trick.length);
+}
+function doUndo(){
+  if(!canUndo())return;
+  const u=ui.undo;ui.undo=null;
+  if(botTimer){clearTimeout(botTimer);botTimer=0;ui.busy=false}
+  const undos=(G.undos||0)+1;G=u.g;G.undos=undos;
+  addLog(G,`${G.players[seat()].name} took back ${u.label}.`,'undo');
+  ui.sel=null;ui.lvl=null;ui.call=null;ui.hold=null;ui.lastTrickKey=trickKey(G.lastTrick);ui.seenSeq=G.seq;ui.autoKey=null;
+  sfx('tick');net.driver=true;commit();render();kick();
+}
+// Only one card can be played: play it for the person after a short pause.
+function maybeAutoplay(){
+  if(!prefs.autoplay||!G||!mine()||G.phase!=='play'||ui.sheet)return;
+  const l=legalCards(G,G.turn);if(l.length!==1)return;
+  const key=G.hn+':'+G.trickNo+':'+G.trick.length+':'+(G.undos||0);if(ui.autoKey===key)return;ui.autoKey=key;
+  setTimeout(()=>{if(!G||!mine()||G.phase!=='play'||G.hn+':'+G.trickNo+':'+G.trick.length+':'+(G.undos||0)!==key)return;
+    const l2=legalCards(G,G.turn);if(l2.length===1){ui.sel=null;humanPlay(l2[0],true)}},(HEADLESS?0:650*spd()+(ui.hold?700:0)));
 }
 function humanClaim(){if(!mine()||!canClaim(G))return;claimRest(G,G.contract.decl);sfx('good');afterHuman()}
 function afterHuman(){net.driver=true;commit();render();kick()}
 
 /* ---------- computers (one at a time, paced) ---------- */
 let botTimer=0;
+function holdMs(){return Math.max(450,900*spd())}
 function botDelay(){
-  if(G.phase==='auction')return 700;
-  if(!G.trick.length&&G.lastTrick&&G.lastTrick.hn===G.hn)return 1250;
-  return 650;
+  const m=spd();
+  if(G.phase==='auction')return 600*m;
+  if(!G.trick.length&&G.lastTrick&&G.lastTrick.hn===G.hn)return holdMs()+340+150*m;
+  return 560*m;
 }
 function blockedBySummary(){return mode==='local'&&(ui.summaryFor!=null||ui.sheet==='hand'||!!(ui.hold&&G&&G.lastHand&&ui.hold.hn===G.lastHand.hn&&G.lastHand.hn!==G.hn))}
 function kick(){
   if(botTimer||!G||!actorBot())return;
   if(mode==='online'&&!net.driver)return;
   if(blockedBySummary())return;
-  const g0=G,ep=net.epoch;ui.busy=true;render();
+  const g0=G,ep=net.epoch,seq0=G.seq,t0=now(),delay=botDelay()*TIME_SCALE;ui.busy=true;render();
+  const stale=()=>G!==g0||G.seq!==seq0||net.epoch!==ep||!actorBot()||blockedBySummary()||(mode==='online'&&!net.driver);
+  // Think first (during the pause), then show the move when the pause is over.
   botTimer=setTimeout(()=>{
-    botTimer=0;
-    if(G!==g0||net.epoch!==ep||!actorBot()||blockedBySummary()||(mode==='online'&&!net.driver)){ui.busy=false;render();return}
+    if(stale()){botTimer=0;ui.busy=false;render();return}
     let m=null;
-    try{m=applyBot(G,'mc')}catch(e){console.error(e);try{m=applyBot(G,'base')}catch(e2){console.error(e2)}}
-    ui.busy=false;
-    if(m)sfx(m.type==='call'?'bid':'card');
-    commit();render();kick();
-  },botDelay()*TIME_SCALE);
+    try{m=botMove(G,'mc')}catch(e){console.error(e);try{m=botMove(G,'base')}catch(e2){console.error(e2)}}
+    botTimer=setTimeout(()=>{
+      botTimer=0;
+      if(stale()||!m){ui.busy=false;render();return}
+      try{if(m.type==='call')applyCall(G,m.p,m.c);else playCard(G,m.p,m.c)}catch(e){console.error(e);m=null}
+      ui.busy=false;
+      if(m)sfx(m.type==='call'?'bid':'card');
+      commit();render();kick();
+    },Math.max(0,delay-(now()-t0)));
+  },HEADLESS?0:20);
 }
 if(!HEADLESS)AIP.timeMs=450;
 
@@ -1632,6 +1688,9 @@ function applyDoc(d){
       G=clone(d.g);net.gid=d.gid;net.rev=d.rev;net.lastBy=d.by;net.epoch++;net.driver=false;
       if(botTimer){clearTimeout(botTimer);botTimer=0;ui.busy=false}
       if(fresh)adoptFresh();
+      if(G.seq<ui.seenSeq)ui.seenSeq=G.seq;
+      if((G.undos||0)!==ui.undosSeen){ui.undosSeen=G.undos||0;if(!fresh)ui.undo=null}
+      if(ui.undo&&(ui.undo.hn!==G.hn))ui.undo=null;
       if(ui.sel!=null){const own=G.hands[viewSeat()]||[],dm=G.contract&&G.dummyUp?G.hands[G.contract.dummy]:[];if(!own.includes(ui.sel)&&!dm.includes(ui.sel))ui.sel=null}
       if(G.phase!=='auction'){ui.lvl=null;ui.call=null}
       scheduleRepair();
@@ -1810,12 +1869,12 @@ function dispState(){
   return {old,rec:old?h:null};
 }
 function syncHold(){
-  const lt=G.lastTrick,key=lt?lt.hn+':'+lt.n:null;
+  const lt=G.lastTrick,key=trickKey(lt);
   if(key&&key!==ui.lastTrickKey){
     ui.lastTrickKey=key;const h={cards:lt.cards,w:lt.w,hn:lt.hn,stage:'show'};ui.hold=h;
     if(teamOf(lt.w)===myTeam())sfx('win');
     setTimeout(()=>{if(ui.hold!==h)return;h.stage='out';render();
-      setTimeout(()=>{if(ui.hold===h){ui.hold=null;holdEnded();render();kick()}},340)},1000);
+      setTimeout(()=>{if(ui.hold===h){ui.hold=null;holdEnded();render();kick()}},340)},holdMs());
   }
   if(G.trick.length&&ui.hold){ui.hold=null}
   if(!ui.hold)holdEnded();
@@ -1834,7 +1893,7 @@ function seatHTML(p,disp){
   const turn=live()&&G.turn===p&&!disp.old&&!(ui.hold&&!G.trick.length);
   const think=live()&&act===p&&pl.bot&&ui.busy&&!disp.old;
   const c=G.contract,inPlay=G.phase==='play'&&!disp.old&&c;
-  const isDummy=inPlay&&G.dummyUp&&p===c.dummy&&r!==0;
+  const isDummy=inPlay&&openSeats(disp).includes(p);
   let chip='';
   if(G.phase==='auction'&&!disp.old){
     const mine_=G.auction.filter(a=>a.p===p);const last=mine_.length?mine_[mine_.length-1].c:null;
@@ -1926,26 +1985,28 @@ function trickCount(){
   const c=G.contract;if(!c)return '';
   const dt=teamOf(c.decl),need=c.level+6,us=myTeam();
   const mineT=G.tricks[us],theirs=G.tricks[1-us];
-  const goal=dt===us?`need ${need}`:`need ${14-need} to beat it`;
+  const goal=dt===us?`need ${need}`:`${14-need} to beat it`;
   return `<span class="tk"><b>${mineT}</b><i>–</i><b>${theirs}</b></span><small>${goal}</small>`;
 }
 function mebarHTML(disp){
-  const s=seat();
-  if(s<0)return `<div class="mebar"><span class="live">Watching</span><span class="grow"></span>${G.phase==='play'?`<div class="chip big">${trickCount()}</div>`:''}<button class="pill" data-do="leave">Leave</button></div>`;
+  const s=seat(),inPlay=G.phase==='play'&&!disp.old;
+  if(s<0)return `<div class="mebar"><span class="live">Watching</span><span class="grow"></span>${inPlay?`<div class="chip big">${trickCount()}</div>`:''}<button class="pill" data-do="leave">Leave</button></div>`;
   const pl=G.players[s],away=pl.away,c=G.contract;
   let role=mode==='online'?'Live game':'Partner: '+esc(G.players[partnerOf(s)].name);
-  if(G.phase==='play'&&c&&!disp.old)role=s===c.decl?'You declare '+bidText(c.bid):s===c.dummy?'You are dummy':'Defending '+bidText(c.bid);
-  else if(G.phase==='auction'&&G.dealer===s&&!disp.old)role='You deal';
+  if(G.phase==='auction'&&G.dealer===s&&!disp.old)role='You deal';
   const btns=[];
   if(away)btns.push('<button class="pill strong" data-do="back">Take my seat back</button>');
   else{
-    if(G.phase==='play'&&!disp.old&&mine()&&canClaim(G))btns.push('<button class="pill strong" data-do="ask-claim">Claim</button>');
-    if(G.phase==='play'&&!disp.old)btns.push('<button class="pill" data-do="auction">Bids</button>');
-    if(G.opts.lastTrick&&G.phase==='play'&&G.lastTrick&&G.lastTrick.hn===G.hn&&!disp.old)btns.push('<button class="pill" data-do="last">Last</button>');
+    if(canUndo()&&!disp.old)btns.push('<button class="pill undo" data-do="undo" aria-label="Undo">↶ Undo</button>');
+    const claim=inPlay&&mine()&&canClaim(G);
+    if(claim)btns.push('<button class="pill strong" data-do="ask-claim">Claim</button>');
+    if(inPlay&&!(claim&&canUndo()))btns.push('<button class="pill" data-do="auction">Bids</button>');
+    if(G.opts.lastTrick&&inPlay&&G.played.length)btns.push('<button class="pill" data-do="tricks">Tricks</button>');
   }
+  const who=inPlay&&c?(s===c.decl?'Declarer':s===c.dummy?'Dummy':'Defending'):'';
+  const mid=inPlay?`<div class="chip big"><small class="who">${who}</small>${trickCount()}</div>`:`<div class="nm"><b>${esc(mode==='online'?pl.name:'You')}</b><small>${role}</small></div>`;
   return `<div class="mebar us${mine()?' turn':''}"><div class="av"><span>${esc((pl.name||'Y').slice(0,1).toUpperCase())}</span></div>
-   <div class="nm"><b>${esc(mode==='online'?pl.name:'You')}</b><small>${role}</small></div>
-   ${G.phase==='play'&&!disp.old?`<div class="chip big">${trickCount()}</div>`:''}<span class="grow"></span>${btns.join('')}</div>`;
+   ${mid}<span class="grow"></span>${btns.join('')}</div>`;
 }
 function handGeom(n,W){
   const cw=W>=520?76:W>=420?70:64,ch=Math.round(cw*1.42);
@@ -1969,28 +2030,41 @@ function handItems(disp){
       html:faceHTML(c),attrs:{'data-do':'card','data-c':c,role:'button','aria-label':cardAria(c)},enter:'deal',enterMs:1000}});
 }
 function miniFace(c){const s=sOf(c);return `<b>${RANKNAME[rOf(c)]}</b>${suitSVG(s)}`}
-function dummyHTML(disp){
-  if(!dummyShown(disp))return '';
-  const c=G.contract,d=c.dummy,r=rel(d);if(r===0)return '';
-  const h=G.hands[d],order=SUIT_ORDERS[c.strain];
-  const declaring=mine()&&G.turn===d;
-  const legal=declaring?new Set(legalCards(G,d)):null;
-  const turn=G.turn===d&&!(ui.hold&&!G.trick.length);
-  const label=`<div class="dlabel${turn?' turn':''}">${esc(G.players[d].name)} · dummy${G.players[d].bot?'':''}</div>`;
-  if(r===2){
-    const cols=order.map(s=>{const cs=h.filter(x=>sOf(x)===s).sort((a,b)=>b-a);
-      const n=cs.length,step=n>1?Math.min(23,Math.floor(118/(n-1))):0;
-      return `<div class="dcol" style="height:${n?66+step*(n-1):24}px">${n?cs.map((x,i)=>{const ok=legal&&legal.has(x);
-        return `<button class="dc${isRed(x)?' red':''}${legal&&!ok?' dim':''}${ok?' ok':''}${ui.sel===x?' up':''}" style="top:${i*step}px;z-index:${i+1}" data-do="dcard" data-c="${x}" aria-label="${cardAria(x)}">${miniFace(x)}</button>`}).join(''):'<span class="void">—</span>'}</div>`}).join('');
-    return `<div class="dummy top">${label}<div class="dcols">${cols}</div></div>`;
-  }
-  const rows=order.map(s=>{const cs=h.filter(x=>sOf(x)===s).sort((a,b)=>b-a);
+// Hands this phone shows face up: the dummy, plus every hand when you are dummy (setting).
+function openSeats(disp){
+  if(!dummyShown(disp))return [];
+  const c=G.contract,me=seat(),out=[];
+  if(rel(c.dummy)!==0)out.push(c.dummy);
+  if(me>=0&&me===c.dummy&&prefs.dummyView&&!G.players[me].away)for(let p=0;p<4;p++)if(p!==me&&!out.includes(p))out.push(p);
+  return out;
+}
+function rowsHTML(h,order){
+  return order.map(s=>{const cs=h.filter(x=>sOf(x)===s).sort((a,b)=>b-a);
     return `<div class="drow${s===1||s===2?' red':''}">${suitSVG(s,'ds')}${cs.length?cs.map(x=>`<span>${RANKNAME[rOf(x)]}</span>`).join(''):'<span class="void">—</span>'}</div>`}).join('');
-  return `<div class="dummy side ${r===1?'left':'right'}">${label}${rows}</div>`;
+}
+function dummyHTML(disp){
+  const list=openSeats(disp);if(!list.length)return '';
+  const c=G.contract,order=SUIT_ORDERS[c.strain],me=seat();
+  return list.map(p=>{
+    const r=rel(p),h=G.hands[p],turn=G.turn===p&&!(ui.hold&&!G.trick.length);
+    const role=p===c.dummy?'dummy':p===c.decl?'declarer':'';
+    const label=`<div class="dlabel${turn?' turn':''}">${esc(G.players[p].name)}${role?' · '+role:''}</div>`;
+    if(r===2&&p===c.dummy&&me===c.decl){
+      const declaring=mine()&&G.turn===p,legal=declaring?new Set(legalCards(G,p)):null;
+      const step=ui.dstep||23,ch=ui.dch||66;
+      const cols=order.map(s=>{const cs=h.filter(x=>sOf(x)===s).sort((a,b)=>b-a),n=cs.length;
+        return `<div class="dcol" style="height:${n?ch+step*(n-1):24}px">${n?cs.map((x,i)=>{const ok=legal&&legal.has(x);
+          return `<button class="dc${isRed(x)?' red':''}${legal&&!ok?' dim':''}${ok?' ok':''}${ui.sel===x?' up':''}" style="top:${i*step}px;height:${ch}px;z-index:${i+1}" data-do="dcard" data-c="${x}" aria-label="${cardAria(x)}">${miniFace(x)}</button>`}).join(''):'<span class="void">—</span>'}</div>`}).join('');
+      return `<div class="dummy top" data-p="${p}">${label}<div class="dcols">${cols}</div></div>`;
+    }
+    const pos=r===2?'top':'side '+(r===1?'left':'right');
+    return `<div class="dummy opn ${pos}${p===c.dummy?'':' peek'}" data-p="${p}">${label}${rowsHTML(h,order)}</div>`;
+  }).join('');
 }
 function trickItems(){
   const hold=ui.hold&&!G.trick.length?ui.hold:null,cards=hold?hold.cards:G.trick,hn=hold?hold.hn:G.hn;
-  return cards.map((x,i)=>({k:'t'+hn+'-'+x.c,cls:`card tc r${rel(x.p)}${isRed(x.c)?' red':''}${hold&&x.p===hold.w?' win':''}${hold&&hold.stage==='out'?' out w'+rel(hold.w):''}`,
+  const lead=!hold&&cards.length>1&&G.contract?trickWinner(cards,G.contract.strain):-1;
+  return cards.map((x,i)=>({k:'t'+hn+'-'+x.c,cls:`card tc r${rel(x.p)}${isRed(x.c)?' red':''}${hold&&x.p===hold.w?' win':''}${x.p===lead?' lead':''}${hold&&hold.stage==='out'?' out w'+rel(hold.w):''}`,
     style:`z-index:${i+1}`,html:faceHTML(x.c),attrs:{'aria-label':cardAria(x.c)},enter:'in',enterMs:400}));
 }
 function endHTML(){
@@ -2030,6 +2104,33 @@ function renderGame(app){
   setHTML(document.getElementById('panel'),showEnd?endHTML():bidPanelHTML(disp));
   setHTML(document.getElementById('mebar'),mebarHTML(disp));
   keyed(document.getElementById('hand'),handItems(disp));
+  layoutTable(table,disp);
+}
+// Fit the trick between whatever is at the top of the table and the status line, and keep the
+// side seats or open hands beside it, so nothing overlaps on short or narrow phones.
+function layoutTable(t,disp){
+  const W=t.clientWidth,H=t.clientHeight;if(!W||!H)return;
+  const play=(G.phase==='play'&&!disp.old)||(ui.hold&&!G.trick.length);
+  const sides=[...t.querySelectorAll('.seat.r1,.seat.r3,.dummy.side')].filter(el=>el.offsetParent!==null);
+  if(!play){for(const v of ['--tcw','--tch','--tdx','--tdy','--tcy'])t.style.removeProperty(v);for(const el of sides)el.style.top='';return}
+  // dummy columns: fit the longest suit in about 40% of the table
+  const dt=t.querySelector('.dummy.top .dcols');
+  if(dt){const p=+dt.parentNode.dataset.p,maxN=Math.max(1,...[0,1,2,3].map(s=>G.hands[p].filter(x=>sOf(x)===s).length));
+    const ch=H<480?56:66,room=Math.max(ch+40,H*0.4-26),step=Math.max(13,Math.min(23,Math.floor((room-ch)/Math.max(1,maxN-1))));
+    if(step!==ui.dstep||ch!==ui.dch){ui.dstep=step;ui.dch=ch;setHTML(document.getElementById('dummy'),dummyHTML(disp))}}
+  let topB=0;
+  for(const el of t.querySelectorAll('.dummy.top,.seat.r2')){if(el.offsetParent===null)continue;topB=Math.max(topB,el.offsetTop+el.offsetHeight)}
+  const botB=H-46,avail=Math.max(120,botB-topB-6);
+  const panels=sides.some(el=>el.classList.contains('dummy'));
+  const need=panels?Math.min(128,W*0.33):78;
+  let tch=Math.max(58,Math.min(92,avail/2.2)),tcw=tch/1.42;
+  const maxW=(W/2-need-4)/1.08;if(tcw>maxW){tcw=Math.max(40,maxW);tch=tcw*1.42}
+  const tdx=Math.max(tcw*0.55,Math.min(tcw*0.98,W/2-tcw/2-need)),tdy=Math.min(tch*0.56,(avail-tch)/2);
+  const cy=topB+3+avail/2;
+  t.style.setProperty('--tcw',tcw.toFixed(1)+'px');t.style.setProperty('--tch',tch.toFixed(1)+'px');
+  t.style.setProperty('--tdx',tdx.toFixed(1)+'px');t.style.setProperty('--tdy',tdy.toFixed(1)+'px');t.style.setProperty('--tcy',cy.toFixed(1)+'px');
+  t.style.setProperty('--sidew',Math.max(92,Math.min(132,W/2-tdx-tcw/2-8)).toFixed(0)+'px');
+  for(const el of sides){const h=el.offsetHeight;el.style.top=Math.round(Math.max(topB+4,Math.min(cy-h/2,botB-h)))+'px'}
 }
 function render(){
   if(quiet||HEADLESS)return;
@@ -2047,6 +2148,7 @@ function render(){
   for(const id in keep){const el=document.getElementById(id);if(el&&el.value!==keep[id])el.value=keep[id]}
   if(focus){const el=document.getElementById(focus);if(el&&el.tagName==='INPUT'&&document.activeElement!==el)el.focus()}
   notifyTurn();
+  maybeAutoplay();
 }
 /* ---------- home & sheets ---------- */
 function savedGame(){const s=loadJSON(SAVEKEY);return s&&s.v===1&&s.phase!=='end'?s:null}
@@ -2139,10 +2241,14 @@ function logHTML(){
   const items=G.log.slice().reverse().slice(0,200).map(l=>`<li class="${l.k}"><i>D${l.h}</i>${esc(l.m)}</li>`).join('');
   return shead('Game log')+`<ul class="log">${items}</ul>`;
 }
-function lastHTML(){
-  const lt=G.lastTrick;if(!lt)return shead('Last trick')+'<p class="sub">No trick yet.</p>';
-  return shead('Last trick')+`<div class="lastt">${lt.cards.map(x=>`<div class="lc"><div class="card mini${isRed(x.c)?' red':''}${x.p===lt.w?' win':''}">${faceHTML(x.c)}</div><span>${esc(nameOf(x.p))}</span></div>`).join('')}</div>
-   <p class="sub center">${esc(nameOf(lt.w))} took it.</p>`;
+function lastHTML(){return tricksHTML()}
+function tricksHTML(){
+  const ts=G.played;if(!ts.length)return shead('Tricks')+'<p class="sub">No trick yet.</p>';
+  const c=G.contract,us=myTeam();
+  const rows=ts.map((t,i)=>{const cells=[0,1,2,3].map(k=>{const p=(t.l+k)%4,x=t.c[k];
+      return `<div class="tcell${p===t.w?' win':''}"><div class="card mini${isRed(x)?' red':''}">${faceHTML(x)}</div><span>${esc(nameOf(p).slice(0,6))}</span></div>`}).join('');
+    return `<div class="trow"><b class="${teamOf(t.w)===us?'us':'them'}">${i+1}</b>${cells}</div>`}).reverse().join('');
+  return shead('Tricks')+`<p class="res">${c?contractHTML(c)+' by '+esc(nameOf(c.decl))+'. ':''}Newest first. The ringed card won.</p><div class="tlist">${rows}</div>`;
 }
 function auctionSheet(){
   return shead('The bidding')+`<p class="res">${esc(nameOf(G.contract.decl))} plays ${contractHTML(G.contract)}. ${esc(nameOf(G.contract.dummy))} is dummy.</p>`+auctionGrid(G.auction,G.dealer,{explain:true,sel:ui.explain});
@@ -2153,7 +2259,7 @@ function rulesHTML(){
   <h3>The bidding</h3><p>Starting with the dealer, each player bids, passes or doubles. A bid names a number and a suit or notrump (NT): <b>2♥</b> means "with hearts as trumps, we will take 6 + 2 = 8 tricks". Each bid must be higher than the last, and suits rank ♣ ♦ ♥ ♠ NT from lowest. The bidding ends after three passes in a row. The last bid is the <b>contract</b>.</p>
   <p>The player on the winning side who first named the contract's suit is the <b>declarer</b>. <b>Double</b> raises the stakes on the opponents' bid; <b>redouble</b> raises them again.</p>
   <h3>The play</h3><p>The player to declarer's left leads. Then declarer's partner lays their cards face up: the <b>dummy</b>. Declarer plays both hands. Follow suit if you can; otherwise play any card. The highest trump wins, or the highest card of the suit led.</p>
-  <p>Tap a card to raise it, tap again to play. When you declare, the dummy's cards sit at the top of the table; tap them on dummy's turn.</p>
+  <p>Tap a card to raise it, tap again to play. When you declare, the dummy's cards sit at the top of the table; tap them on dummy's turn. Played the wrong card? Tap <b>Undo</b>. Online, you can take a card back until the next trick starts.</p>
   <h3>Scoring</h3><p>Per trick over six: ♣ ♦ 20, ♥ ♠ 30, NT 40 for the first and 30 after. Doubled ×2, redoubled ×4. These "below the line" points build toward <b>game</b> at 100: 3NT, 4♥, 4♠, 5♣ or 5♦ make game in one deal.</p>
   <p>Down tricks score for the defenders: 50 each (100 vulnerable), more when doubled. Slams add 500 for six (750 vulnerable) and 1000 for seven (1500). Overtricks and honors go "above the line".</p>
   <p><b>Rubber:</b> the first side to win two games wins the rubber and 700 (500 if the other side has a game). A side with one game is <b>vulnerable</b>: bigger bonuses, bigger penalties. The higher total wins.</p>
@@ -2166,7 +2272,9 @@ function rulesHTML(){
 function settingsHTML(){
   const tg=(k,label,sub)=>`<div class="setting"><div><b>${label}</b>${sub?`<p class="sub">${sub}</p>`:''}</div><button class="tog${prefs[k]?' on':''}" data-do="pref" data-k="${k}" aria-pressed="${!!prefs[k]}"><i></i></button></div>`;
   return shead('Settings')+tg('sound','Sound','Soft tones for cards, tricks and your turn.')+tg('haptics','Vibration','A buzz when it\'s your turn.')+
-   tg('twoTap','Tap twice to play','First tap raises a card, second tap plays it.')+tg('hint','Bid hint','Show what the computer would bid with your cards.')+
+   tg('twoTap','Tap twice to play','First tap raises a card, second tap plays it.')+tg('autoplay','Play forced cards','When only one card can be played, play it for me.')+
+   tg('dummyView','See all hands as dummy','While your partner plays the hand, show everyone\'s cards.')+tg('hint','Bid hint','Show what the computer would bid with your cards.')+
+   `<div class="setting"><div><b>Speed</b><p class="sub">How fast the computers play.</p></div><div class="seg">${['relaxed','normal','fast'].map(t=>`<button class="${prefs.speed===t?'on':''}" data-do="speed" data-v="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div></div>`+
    `<div class="setting"><div><b>Theme</b></div><div class="seg">${['auto','light','dark'].map(t=>`<button class="${prefs.theme===t?'on':''}" data-do="theme" data-v="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div></div>`;
 }
 function menuHTML(){
@@ -2175,7 +2283,7 @@ function menuHTML(){
      return `<div class="setting"><div><b>${esc(p.name)}${isMe?' (you)':''}</b><p class="sub">${p.away?'Computer is playing for them':p.bot?'Computer':'Person'}</p></div>${!isMe&&human&&!p.bot?`<button class="pill" data-do="ask-hand" data-i="${i}">Hand to computer</button>`:''}${isMe&&p.away?'<button class="pill strong" data-do="back">Take my seat back</button>':''}</div>`}).join('')}`:'';
   return shead('Menu')+`<div class="mlist"><button class="btn wide" data-do="scores">Scoreboard</button><button class="btn wide" data-do="log">Game log</button>
    ${G.phase==='play'?'<button class="btn wide" data-do="auction">The bidding</button>':''}
-   ${G.opts.lastTrick&&G.phase==='play'?'<button class="btn wide" data-do="last">Last trick</button>':''}
+   ${G.opts.lastTrick&&G.phase==='play'?'<button class="btn wide" data-do="tricks">Tricks this deal</button>':''}
    <button class="btn wide" data-do="rules">How to play</button><button class="btn wide" data-do="settings">Settings</button>
    ${mode==='local'?'<button class="btn wide" data-do="home">Home (game is saved)</button><button class="btn wide ghost" data-do="ask-new">Quit this game</button>':''}
    ${mode==='online'&&s<0?'<button class="btn wide" data-do="leave">Stop watching</button>':''}
@@ -2197,7 +2305,7 @@ function sheetHTML(){
   else if(s==='menu')inner=menuHTML();
   else if(s==='scores')inner=scoresHTML();
   else if(s==='log')inner=logHTML();
-  else if(s==='last')inner=lastHTML();
+  else if(s==='last'||s==='tricks')inner=tricksHTML();
   else if(s==='auction'){if(!G.contract)return '';inner=auctionSheet()}
   else if(s==='hand'){inner=summaryHTML();cls=' sum'}
   else if(s==='confirm'){inner=confirmHTML();cls=' small'}
@@ -2223,7 +2331,9 @@ document.addEventListener('click',e=>{
     case 'call':if(ui.call!=null)humanCall(ui.call);break;
     case 'explain':ui.explain=ui.explain===+d.k?null:+d.k;render();break;
     case 'hint':prefs.hint=!prefs.hint;savePrefs();ui.hint=null;render();break;
-    case 'menu':case 'scores':case 'log':case 'rules':case 'settings':case 'last':case 'online':case 'auction':ui.explain=null;ui.sheet=d.do;render();break;
+    case 'undo':doUndo();break;
+    case 'speed':prefs.speed=d.v;savePrefs();render();break;
+    case 'menu':case 'scores':case 'log':case 'rules':case 'settings':case 'last':case 'tricks':case 'online':case 'auction':ui.explain=null;ui.sheet=d.do;render();break;
     case 'solo':ui.setup.rules=Object.assign({},prefs.rules);ui.sheet='solo';render();break;
     case 'deal':startSolo();break;
     case 'again':{const names=G.players.map(p=>({name:p.name,bot:p.bot}));const opts=G.opts;G=newGame(names,opts);mode='local';adoptFresh();save();render();kick();break}
