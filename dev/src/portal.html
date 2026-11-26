@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Parlor</title>
-<meta name="description" content="Family game night: chess, Spades, Setback and island and farm games, on any phone.">
+<meta name="description" content="Family game night: chess, Bridge, Spades, Setback and island and farm games, on any phone.">
 <meta name="theme-color" content="#241911">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -105,7 +105,8 @@ const GAMES=[
   {id:'furrow',name:'Furrow',line:'Grow a farm and a family over 14 rounds.',meta:'1–5 players · 45 min'},
   {id:'atoll',name:'Atoll',line:'Settle, trade and build across an island.',meta:'2–6 players · 45 min'},
   {id:'spades',name:'Midnight Spades',line:'Partnership Spades with nil and bags.',meta:'4 seats'},
-  {id:'setback',name:'Setback Tavern',line:'Connecticut Setback, played to 21.',meta:'4 seats'}];
+  {id:'setback',name:'Setback Tavern',line:'Connecticut Setback, played to 21.',meta:'4 seats'},
+  {id:'bridge',name:'Sunday Bridge',line:'Contract bridge. Rubber or Chicago scoring.',meta:'4 seats'}];
 const $=id=>document.getElementById(id);
 const store={get(k){for(const s of['localStorage','sessionStorage']){try{const v=window[s].getItem(k);if(v)return v}catch(e){}}return null},
   set(k,v){for(const s of['localStorage','sessionStorage']){try{window[s].setItem(k,v)}catch(e){}}}};

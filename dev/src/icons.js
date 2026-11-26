@@ -21,6 +21,15 @@ module.exports = {
     <rect width="512" height="512" fill="url(#w)"/>
     <circle cx="256" cy="256" r="196" fill="#6e1f22" stroke="#b8913f" stroke-width="14"/>
     <path d="${CLUB}" fill="#e9cf86" transform="translate(256 262) scale(.72) translate(-256 -262)"/></svg>`,
+  bridge: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <defs><radialGradient id="f" cx=".5" cy=".42" r=".72"><stop offset="0" stop-color="#2a6a4d"/><stop offset="1" stop-color="#0f2a21"/></radialGradient></defs>
+    <rect width="512" height="512" fill="url(#f)"/>
+    <circle cx="256" cy="256" r="176" fill="#f6f0e0" stroke="#e0b05c" stroke-width="10"/>
+    <circle cx="256" cy="256" r="150" fill="none" stroke="#8e2c38" stroke-width="3" opacity=".55"/>
+    <g transform="translate(256 152) scale(.36) translate(-256 -260)"><path d="${SPADE}" fill="#16261d"/></g>
+    <g transform="translate(360 256) scale(.36) translate(-256 -256)"><path d="M256 410 C 150 330 92 276 92 196 C 92 140 132 106 180 106 C 212 106 238 124 256 150 C 274 124 300 106 332 106 C 380 106 420 140 420 196 C 420 276 362 330 256 410 Z" fill="#b3261e"/></g>
+    <g transform="translate(256 360) scale(.36) translate(-256 -256)"><path d="M256 70 L 400 256 L 256 442 L 112 256 Z" fill="#b3261e"/></g>
+    <g transform="translate(152 256) scale(.36) translate(-256 -262)"><path d="${CLUB}" fill="#16261d"/></g></svg>`,
   atoll: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
     <rect width="512" height="512" fill="#0f4c5c"/>
     <circle cx="256" cy="256" r="210" fill="#2f8fa0"/>

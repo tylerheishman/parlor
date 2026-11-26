@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild the Parlor website (the repo root) from the six games in dev/games.
+"""Rebuild the Parlor website (the repo root) from the seven games in dev/games.
 Usage: python3 dev/build.py [--config dev/config.js] [--out DIR]
 The output folder gets index.html, config.js, shim.js, sw.js, lib/, icons/ and one folder per game.
 Nothing else in it is touched (dev/, README.md and .git stay as they are)."""
@@ -16,6 +16,7 @@ GAMES = [
     ('atoll', 'games/atoll.html', 'Atoll', 'Atoll', '#0f4c5c', '#cfe6e4'),
     ('spades', 'games/spades.html', 'Midnight Spades', 'Spades', '#0b1730', '#070f22'),
     ('setback', 'games/setback.html', 'Setback Tavern', 'Setback', '#3d2819', '#2e1d12'),
+    ('bridge', 'games/bridge.html', 'Sunday Bridge', 'Bridge', '#173b2f', '#0f2a21'),
 ]
 NOCONN = "Online play is not available right now. Check your internet connection, then reload."
 TEXT = {
@@ -25,6 +26,9 @@ TEXT = {
         ("Each person opens the page signed in to their own claude.ai account. The owner shares it with them as an Editor from the Share menu.", "Each person opens Furrow on their own phone, with the same table code."),
     ],
     'spades': [("t available in this view. Open the page signed in to claude.ai. Each friend needs it shared with them as an Editor.", "t available right now. Check your internet connection, then reload.")],
+    'bridge': [
+        ("t available in this view. Open the page signed in to claude.ai. Each friend needs it shared with them as an Editor.", "t available right now. Check your internet connection, then reload."),
+    ],
     'setback': [("Online play needs this page opened on claude.ai while signed in. Other players need it shared with them as Editors.", NOCONN)],
     'atoll': [("Online play needs this page opened on claude.ai while signed in. Each player opens it on their own phone.", NOCONN)],
     'strand': [

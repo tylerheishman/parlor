@@ -2,13 +2,13 @@
 // then each person hands their seat to the computer on their turn, and the game runs on for a while.
 // Checks: start, seat counts, all phones stay in sync, the game keeps moving, no page errors.
 const {chromium}=require('playwright');
-const GAMES=process.argv.slice(2).length?process.argv.slice(2):['furrow','spades','setback','atoll','strand'];
-const SET={furrow:{op:3,ob:1},spades:{op:3},setback:{op:3},atoll:{op:3,ob:1},strand:{op:3,ob:1}};
+const GAMES=process.argv.slice(2).length?process.argv.slice(2):['furrow','spades','setback','atoll','strand','bridge'];
+const SET={furrow:{op:3,ob:1},spades:{op:3},setback:{op:3},atoll:{op:3,ob:1},strand:{op:3,ob:1},bridge:{op:3}};
 const RUN_MS=+process.env.RUN_MS||45000;let fail=0;
 const ok=(c,m)=>{if(!c){fail++;console.log('FAIL',m)}else console.log('ok  ',m)};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 (async()=>{
-  const b=await chromium.launch();
+  const b=await chromium.launch(process.env.CHROME?{executablePath:process.env.CHROME}:{});
   for(const g of GAMES){
     console.log('=== '+g);const table='t'+Date.now().toString(36);const phones=[];
     for(const d of ['ph0','ph1','ph2']){
@@ -26,7 +26,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
     ok(started,g+': game started on all three phones after a simultaneous join');
     if(!started){console.log(await Promise.all(phones.map(p=>p.page.evaluate(()=>({mode,doc:net.doc&&net.doc.status,seats:net.doc&&net.doc.seats})))));continue}
     const info=await phones[0].page.evaluate(()=>({n:G.players.length,bots:G.players.filter(p=>p.bot).length,seats:net.doc.seats.filter(Boolean).length}));
-    ok(info.seats===3&&info.n===3+(S.ob||(g==='spades'||g==='setback'?1:0)),g+`: ${info.seats} people + ${info.n-info.seats} computer seated`);
+    ok(info.seats===3&&info.n===3+(S.ob||(g==='spades'||g==='setback'||g==='bridge'?1:0)),g+`: ${info.seats} people + ${info.n-info.seats} computer seated`);
     const rev0=await phones[0].page.evaluate(()=>net.rev);
     const t0=Date.now();let handed=0;
     while(Date.now()-t0<RUN_MS){

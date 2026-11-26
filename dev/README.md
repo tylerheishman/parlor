@@ -14,6 +14,7 @@ Every change goes to two places:
 | Atoll | games/atoll.html | https://claude.ai/artifact/BJRVSSpdby7LfuRzTUHLjm |
 | Midnight Spades | games/spades.html | https://claude.ai/artifact/DkZ1QHvRQN2y9SK4Gx2Z2S |
 | Setback Tavern | games/setback.html | https://claude.ai/artifact/CnQAjcD8WfzFcpQ3iJ95FG |
+| Sunday Bridge | games/bridge.html | https://claude.ai/artifact/3dNXoWWRH7B9FabXQ1ueez |
 
 Artifacts use capabilities `{db:{}, user:{}}` (claude.ai online play).
 
@@ -33,3 +34,4 @@ Artifacts use capabilities `{db:{}, user:{}}` (claude.ai online play).
   (`npx firebase emulators:start --only database --project demo-family`, site served on 127.0.0.1:8080 built with an emulator config).
 - `test/live_site.js`: two phones on the live site and live database (uses a throwaway `selftest-…` table).
 - `strand-design.md`: the Strand ruleset and balance notes.
+- Set `CHROME=/usr/bin/google-chrome` to run the Playwright tests with an installed Chrome.
